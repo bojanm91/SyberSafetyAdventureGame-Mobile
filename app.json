@@ -1,0 +1,30 @@
+{
+  "expo": {
+    "name": "CyberSafety",
+    "slug": "csag-mobile",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "scheme": "csag",
+    "userInterfaceStyle": "dark",
+    "splash": {
+      "resizeMode": "contain",
+      "backgroundColor": "#050816"
+    },
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "com.csag.mobile"
+    },
+    "android": {
+      "adaptiveIcon": {
+        "backgroundColor": "#050816"
+      },
+      "package": "com.csag.mobile"
+    },
+    "plugins": [
+      "expo-router"
+    ],
+    "experiments": {
+      "typedRoutes": true
+    }
+  }
+}
