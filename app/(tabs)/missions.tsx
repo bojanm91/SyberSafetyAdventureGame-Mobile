@@ -58,6 +58,7 @@ export default function MissionsScreen() {
   return (
     <ScrollView
       className="flex-1 bg-bg"
+      style={{ backgroundColor: "#050816" }}
       contentContainerStyle={{ paddingTop: insets.top + 8, paddingBottom: 16, paddingHorizontal: 16 }}
     >
       {/* Header */}

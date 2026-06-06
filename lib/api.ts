@@ -1,19 +1,6 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import Constants from "expo-constants";
 
-// Automatski čita IP računara iz Expo devserver konekcije.
-// Radi u Expo Go bez ikakve konfiguracije.
-// Za produkcijski build postavi pravi URL ovdje kao fallback.
-function getBaseUrl(): string {
-  const hostUri = Constants.expoConfig?.hostUri;
-  if (hostUri) {
-    const host = hostUri.split(":")[0];
-    return `http://${host}:4000/api`;
-  }
-  return "http://localhost:4000/api";
-}
-
-const BASE_URL = getBaseUrl();
+const BASE_URL = "https://cybersafetyadventuregame-backend-production.up.railway.app/api";
 
 
 

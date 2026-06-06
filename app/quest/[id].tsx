@@ -66,18 +66,22 @@ export default function QuestScreen() {
 
   if (loading) {
     return (
-      <View className="flex-1 bg-bg items-center justify-center">
+      <View style={{ flex: 1, backgroundColor: "#050816", alignItems: "center", justifyContent: "center" }}>
         <ActivityIndicator color="#37d6ff" size="large" />
+        <Text style={{ color: "#475569", fontSize: 13, marginTop: 12 }}>Učitavam misiju...</Text>
       </View>
     );
   }
 
   if (error || !quest) {
     return (
-      <View className="flex-1 bg-bg items-center justify-center px-6 gap-4">
-        <Text className="text-rose text-base text-center">{error || "Quest nije pronađen."}</Text>
-        <TouchableOpacity onPress={() => router.back()}>
-          <Text className="text-cyan text-sm">← Nazad na misije</Text>
+      <View style={{ flex: 1, backgroundColor: "#050816", alignItems: "center", justifyContent: "center", paddingHorizontal: 24, gap: 12 }}>
+        <Text style={{ color: "#ef5da8", fontSize: 15, textAlign: "center" }}>{error || "Quest nije pronađen."}</Text>
+        <TouchableOpacity
+          onPress={() => router.back()}
+          style={{ borderColor: "rgba(55,214,255,0.25)", borderWidth: 1, borderRadius: 14, paddingHorizontal: 20, paddingVertical: 10 }}
+        >
+          <Text style={{ color: "#37d6ff", fontSize: 14 }}>← Nazad na misije</Text>
         </TouchableOpacity>
       </View>
     );
@@ -91,6 +95,7 @@ export default function QuestScreen() {
   return (
     <ScrollView
       className="flex-1 bg-bg"
+      style={{ backgroundColor: "#050816" }}
       contentContainerStyle={{ paddingTop: insets.top + 8, paddingBottom: insets.bottom + 24, paddingHorizontal: 16 }}
     >
       {/* Back button */}
