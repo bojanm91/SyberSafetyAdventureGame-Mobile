@@ -1,10 +1,19 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import Constants from "expo-constants";
 
-// VAŽNO: "localhost" ne radi s fizičkog telefona.
-// Promijeni ovo na IP adresu svog računara (npr. "http://192.168.1.100:4000/api").
-// Na Android emulatoru koristi "http://10.0.2.2:4000/api".
-// Na iOS simulatoru "http://localhost:4000/api" radi normalno.
-const BASE_URL = "http://localhost:4000/api";
+// Automatski čita IP računara iz Expo devserver konekcije.
+// Radi u Expo Go bez ikakve konfiguracije.
+// Za produkcijski build postavi pravi URL ovdje kao fallback.
+function getBaseUrl(): string {
+  const hostUri = Constants.expoConfig?.hostUri;
+  if (hostUri) {
+    const host = hostUri.split(":")[0];
+    return `http://${host}:4000/api`;
+  }
+  return "http://localhost:4000/api";
+}
+
+const BASE_URL = getBaseUrl();
 
 async function getToken(): Promise<string | null> {
   return AsyncStorage.getItem("csag_token");
