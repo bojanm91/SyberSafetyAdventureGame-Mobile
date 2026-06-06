@@ -15,6 +15,8 @@ function getBaseUrl(): string {
 
 const BASE_URL = getBaseUrl();
 
+
+
 async function getToken(): Promise<string | null> {
   return AsyncStorage.getItem("csag_token");
 }
