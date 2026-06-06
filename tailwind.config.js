@@ -1,19 +1,37 @@
 /** @type {import('tailwindcss').Config} */
 module.exports = {
-  content: ["./app/**/*.{js,jsx,ts,tsx}", "./contexts/**/*.{js,jsx,ts,tsx}", "./components/**/*.{js,jsx,ts,tsx}"],
+  content: ["./app/**/*.{js,jsx,ts,tsx}", "./contexts/**/*.{js,jsx,ts,tsx}", "./components/**/*.{js,jsx,ts,tsx}", "./lib/**/*.{js,jsx,ts,tsx}"],
   presets: [require("nativewind/preset")],
   theme: {
     extend: {
       colors: {
-        bg: "#050816",
-        panel: "#0b1324",
-        panelSoft: "#101b33",
-        cyan: "#37d6ff",
-        cyanDeep: "#0fa8d7",
-        violet: "#8b5cf6",
-        green: "#13d18a",
-        amber: "#f5b942",
-        rose: "#ef5da8",
+        // Legacy
+        bg: "#0B0F1A",
+        panel: "#141A2A",
+        panelSoft: "#1C2436",
+        // Primary
+        cyan: "#22D3EE",
+        cyanDeep: "#0E7490",
+        // Status
+        success: "#34D399",
+        danger: "#F87171",
+        warning: "#FBBF24",
+        // Text
+        textPrimary: "#E5ECF5",
+        textMuted: "#8A97AD",
+        border: "#26304A",
+        // Accent
+        violet: "#8B5CF6",
+        violet2: "#6D28D9",
+        green: "#34D399",
+        amber: "#FBBF24",
+        rose: "#F87171",
+        pink: "#EC4899",
+        blue: "#3B82F6",
+        teal: "#14B8A6",
+        orange: "#F97316",
+        indigo: "#6366F1",
+        fuchsia: "#D946EF",
       },
     },
   },

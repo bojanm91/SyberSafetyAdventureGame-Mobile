@@ -32,6 +32,11 @@ export interface AuthUser {
   level: number;
   points: number;
   streak: number;
+  codename: string | null;
+  avatarBase: string | null;
+  avatarColor: string | null;
+  avatarGear: string | null;
+  onboardingDone: boolean;
 }
 
 export interface AuthResponse {
@@ -149,4 +154,120 @@ export interface ProgressData {
 
 export function apiGetProgress() {
   return request<ProgressData>("/progress/me");
+}
+
+// ─── GAME API ───────────────────────────────────────────────────────────────
+
+export interface GameTopic {
+  slug: string;
+  name: string;
+  icon: string;
+  lekcija: string | null;
+  count: number;
+}
+
+export interface ScenarioSummary {
+  id: string;
+  title: string;
+  interactionType: string;
+  difficulty: string;
+  xp: number;
+  discipline: { slug: string; name: string; icon: string };
+  completed: boolean;
+}
+
+export interface ScenarioDetail {
+  id: string;
+  title: string;
+  interactionType: string;
+  difficulty: string;
+  xp: number;
+  tekst: string;
+  gameData: Record<string, unknown>;
+  correctData: Record<string, unknown>;
+  objasnjenje: string;
+  discipline: { slug: string; name: string; icon: string };
+}
+
+export interface SubmitResultPayload {
+  questId: string;
+  correct: boolean;
+  xpEarned: number;
+  timeMs?: number;
+}
+
+export interface SubmitResultResponse {
+  correct: boolean;
+  xpEarned: number;
+  leveledUp: boolean;
+  newLevel: number;
+  newRank: string;
+  xpTotal: number;
+  xpToNextLevel: number;
+  streak: number;
+  earnedBadges: Array<{ name: string; icon: string }>;
+}
+
+export interface LeaderboardEntry {
+  rank: number;
+  id: string;
+  username: string;
+  codename: string | null;
+  avatarBase: string | null;
+  avatarColor: string | null;
+  level: number;
+  points: number;
+  rankTier: string;
+}
+
+export interface DailyChallenge {
+  id: string;
+  title: string;
+  discipline: string;
+  xp: number;
+  interactionType: string;
+  date: string;
+}
+
+export function apiGetTopics() {
+  return request<GameTopic[]>("/game/topics");
+}
+
+export function apiGetScenarios(topic?: string) {
+  const qs = topic ? `?topic=${topic}` : "";
+  return request<ScenarioSummary[]>(`/game/scenarios${qs}`);
+}
+
+export function apiGetScenario(id: string) {
+  return request<ScenarioDetail>(`/game/scenarios/${id}`);
+}
+
+export function apiSubmitGameResult(payload: SubmitResultPayload) {
+  return request<SubmitResultResponse>("/game/results", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
+export function apiGetLeaderboard() {
+  return request<LeaderboardEntry[]>("/game/leaderboard");
+}
+
+export function apiUpdateAvatar(data: { codename?: string; avatarBase?: string; avatarColor?: string; avatarGear?: string; onboardingDone?: boolean }) {
+  return request<{ codename: string | null; avatarBase: string | null; avatarColor: string | null; avatarGear: string | null; onboardingDone: boolean }>("/game/avatar", {
+    method: "PATCH",
+    body: JSON.stringify(data),
+  });
+}
+
+export function apiGetDailyChallenge() {
+  return request<DailyChallenge | null>("/game/daily-challenge");
+}
+
+export function apiGetMastery() {
+  return request<Record<string, number>>("/game/mastery");
+}
+
+export function apiGetXpHistory() {
+  return request<Array<{ date: string; xp: number }>>("/game/xp-history");
 }

@@ -9,12 +9,14 @@ export default function RootLayout() {
     <SafeAreaProvider>
       <AuthProvider>
         <StatusBar style="light" backgroundColor="#050816" />
-        <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: "#050816" } }}>
+        <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: "#0B0F1A" } }}>
           <Stack.Screen name="index" />
           <Stack.Screen name="login" />
           <Stack.Screen name="register" />
           <Stack.Screen name="(tabs)" />
           <Stack.Screen name="quest/[id]" />
+          <Stack.Screen name="game/[id]" />
+          <Stack.Screen name="onboarding" />
         </Stack>
       </AuthProvider>
     </SafeAreaProvider>
