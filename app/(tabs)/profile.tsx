@@ -9,6 +9,8 @@ import { apiGetProgress, apiGetMastery, apiGetXpHistory, type ProgressData } fro
 import { T } from "../../lib/theme";
 import LevelRing from "../../components/LevelRing";
 import RadarChart from "../../components/RadarChart";
+import { getAvatarImage } from "../../lib/avatar";
+import { getMissionStats, type MissionStats } from "../../lib/mission-progress";
 
 const TOPIC_ICONS: Record<string, string> = {
   lozinke: "🔑", phishing: "📧", privatnost: "🛡️", malver: "☣️",
@@ -70,6 +72,7 @@ export default function ProfileScreen() {
   const [progress, setProgress]     = useState<ProgressData | null>(null);
   const [mastery, setMastery]       = useState<Record<string, number>>({});
   const [xpHistory, setXpHistory]   = useState<{ date: string; xp: number }[]>([]);
+  const [missionStats, setMissionStats] = useState<MissionStats | null>(null);
   const [deleting, setDeleting]     = useState(false);
   const { width: screenWidth }      = useWindowDimensions();
   const chartWidth                  = screenWidth - 64;
@@ -79,6 +82,7 @@ export default function ProfileScreen() {
     apiGetProgress().then(setProgress).catch(console.error);
     apiGetMastery().then(setMastery).catch(console.error);
     apiGetXpHistory().then(setXpHistory).catch(console.error);
+    getMissionStats(user.id).then(setMissionStats).catch(console.error);
   }, [user?.id]);
 
   useFocusEffect(loadProfile);
@@ -88,7 +92,8 @@ export default function ProfileScreen() {
   const level  = p?.profile.level ?? user.level;
   const points = p?.profile.points ?? user.points;
   const pct    = p?.stats.xpPercentage ?? xpPercent(points, level);
-  const avatarEmoji = user.avatarBase === "B" ? "🦁" : user.avatarBase === "C" ? "🦊" : user.avatarBase === "D" ? "🐺" : "🛡️";
+  const avatarImage = getAvatarImage(user.avatarBase);
+  const missionValue = `${missionStats?.completed ?? p?.stats.completedQuests ?? 0}/${missionStats?.total ?? p?.stats.totalQuests ?? 0}`;
 
   const radarData   = Object.entries(mastery).sort((a, b) => a[0].localeCompare(b[0])).map(([slug, val]) => ({ label: TOPIC_NAMES[slug] ?? slug, icon: TOPIC_ICONS[slug] ?? "📌", value: val }));
   const masteryList = Object.entries(mastery).sort((a, b) => a[1] - b[1]);
@@ -141,7 +146,7 @@ export default function ProfileScreen() {
         {/* Profile card */}
         <View style={{ ...card, borderColor: "rgba(24,165,130,0.25)" }}>
           <View style={{ flexDirection: "row", alignItems: "center", gap: 16 }}>
-            <LevelRing level={level} xpPercent={pct} size={90} avatarEmoji={avatarEmoji} />
+            <LevelRing level={level} xpPercent={pct} size={90} avatarImage={avatarImage} />
             <View style={{ flex: 1 }}>
               <Text style={{ fontFamily: T.fontBody, fontSize: 11, color: T.mint, textTransform: "uppercase", letterSpacing: 2 }}>Cyber Agent</Text>
               <Text style={{ fontFamily: T.fontHead, color: T.hudInk, fontSize: 20, marginTop: 2 }}>{user.codename ?? user.username}</Text>
@@ -185,7 +190,7 @@ export default function ProfileScreen() {
             {[
               { label: "Bodovi",           value: p.profile.points.toLocaleString(), color: T.sun },
               { label: "Bedževi",          value: String(p.stats.badgesCount),       color: T.coral },
-              { label: "Završene misije",  value: `${p.stats.completedQuests}/${p.stats.totalQuests}`, color: T.mint },
+              { label: "Završene misije",  value: missionValue, color: T.mint },
               { label: "Streak",           value: `${p.profile.streak}d`,            color: T.primary },
             ].map((s) => (
               <View key={s.label} style={{ width: "47%", ...card, marginBottom: 0, padding: 14, alignItems: "center" }}>
@@ -270,7 +275,7 @@ export default function ProfileScreen() {
 
         {/* Badges */}
         <View style={{ marginBottom: 14 }}>
-          <Text style={{ fontFamily: T.fontHead, color: T.hudInk, fontSize: 17, marginBottom: 12 }}>Bedževi ({p?.badges.length ?? 0})</Text>
+          <Text style={{ fontFamily: T.fontHead, color: T.hudInk, fontSize: 17, marginBottom: 12 }}>Bedževi ({p?.stats.badgesCount ?? 0})</Text>
           {p?.badges.length ? (
             <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 10 }}>
               {p.badges.map((b) => (

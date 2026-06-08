@@ -1,4 +1,4 @@
-import { View, Text } from "react-native";
+import { Image, type ImageSourcePropType, View, Text } from "react-native";
 import Svg, { Circle, Defs, LinearGradient, Stop } from "react-native-svg";
 
 interface Props {
@@ -7,9 +7,10 @@ interface Props {
   size?: number;
   strokeWidth?: number;
   avatarEmoji?: string;
+  avatarImage?: ImageSourcePropType;
 }
 
-export default function LevelRing({ level, xpPercent, size = 100, strokeWidth = 7, avatarEmoji = "🛡️" }: Props) {
+export default function LevelRing({ level, xpPercent, size = 100, strokeWidth = 7, avatarEmoji = "🛡️", avatarImage }: Props) {
   const r = (size - strokeWidth) / 2;
   const circumference = 2 * Math.PI * r;
   const progress = Math.min(1, Math.max(0, xpPercent / 100));
@@ -50,7 +51,19 @@ export default function LevelRing({ level, xpPercent, size = 100, strokeWidth = 
       </Svg>
       {/* Center content */}
       <View style={{ alignItems: "center" }}>
-        <Text style={{ fontSize: size * 0.3 }}>{avatarEmoji}</Text>
+        {avatarImage ? (
+          <Image
+            source={avatarImage}
+            style={{
+              width: size * 0.52,
+              height: size * 0.58,
+              resizeMode: "contain",
+              marginBottom: -size * 0.04,
+            }}
+          />
+        ) : (
+          <Text style={{ fontSize: size * 0.3 }}>{avatarEmoji}</Text>
+        )}
         <Text style={{ color: "#22D3EE", fontWeight: "800", fontSize: size * 0.16, lineHeight: size * 0.2 }}>
           L{level}
         </Text>

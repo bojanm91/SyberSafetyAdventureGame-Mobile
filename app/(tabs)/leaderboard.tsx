@@ -1,10 +1,11 @@
 import { useEffect, useState } from "react";
-import { View, Text, ScrollView, ActivityIndicator } from "react-native";
+import { Image, View, Text, ScrollView, ActivityIndicator } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
 import { useAuth } from "../../contexts/auth-context";
 import { apiGetLeaderboard, type LeaderboardEntry } from "../../lib/api";
 import { T } from "../../lib/theme";
+import { getAvatarImage } from "../../lib/avatar";
 
 const RANK_COLORS: Record<string, string> = {
   "Mrežni Čuvar": T.primary,
@@ -14,7 +15,6 @@ const RANK_COLORS: Record<string, string> = {
   "Pripravnik":    T.hudMuted,
 };
 const MEDAL: Record<number, string> = { 1: "🥇", 2: "🥈", 3: "🥉" };
-const AVATAR_CHARS = { A: "⚡", B: "🛡️", C: "🔍", D: "🎯" };
 
 export default function LeaderboardScreen() {
   const { user }   = useAuth();
@@ -63,7 +63,7 @@ export default function LeaderboardScreen() {
             {entries.map((entry) => {
               const isMe      = entry.id === user?.id;
               const rankColor = RANK_COLORS[entry.rankTier] ?? T.hudMuted;
-              const avatar    = AVATAR_CHARS[(entry.avatarBase ?? "A") as keyof typeof AVATAR_CHARS] ?? "⚡";
+              const avatar    = getAvatarImage(entry.avatarBase);
               const avatarClr = entry.avatarColor ?? T.primary;
 
               return (
@@ -93,7 +93,7 @@ export default function LeaderboardScreen() {
                     borderWidth: 2, borderColor: avatarClr,
                     alignItems: "center", justifyContent: "center",
                   }}>
-                    <Text style={{ fontSize: 18 }}>{avatar}</Text>
+                    <Image source={avatar} style={{ width: 24, height: 34, resizeMode: "contain" }} />
                   </View>
 
                   {/* Info */}

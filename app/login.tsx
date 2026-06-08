@@ -8,7 +8,6 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
 import { useAuth } from "../contexts/auth-context";
 import { T } from "../lib/theme";
-import AsyncStorage from "@react-native-async-storage/async-storage";
 
 let BG_LOGIN: number | null = null;
 try { BG_LOGIN = require("../assets/images/bg_login.jpg"); } catch { BG_LOGIN = null; }
@@ -27,14 +26,8 @@ export default function LoginScreen() {
     setError("");
     setLoading(true);
     try {
-      const loggedUser = await login(email, password);
-      // Returning users: use backend flag; sync to AsyncStorage so index.tsx agrees
-      if (loggedUser.onboardingDone) {
-        await AsyncStorage.setItem("onboardingDone", "true");
-        router.replace("/(tabs)");
-      } else {
-        router.replace("/onboarding");
-      }
+      await login(email, password);
+      router.replace("/(tabs)");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Greška pri prijavi.");
     } finally {

@@ -5,7 +5,7 @@
  */
 import React, { useState, useRef, useEffect } from "react";
 import {
-  View, Text, TouchableOpacity, TextInput, ScrollView,
+  View, Text, TouchableOpacity, ScrollView,
   Animated, Easing, StyleSheet, Image, ImageBackground,
 } from "react-native";
 import { useRouter } from "expo-router";
@@ -19,14 +19,13 @@ import { apiUpdateAvatar } from "../lib/api";
 // ── Types ────────────────────────────────────────────────────────────────────
 
 type Step = "strip" | "dlg_meet" | "avatar" | "choice" | "dlg_call" | "reward";
-type AvStep = "appearance" | "specialty" | "name";
+type AvStep = "appearance" | "specialty";
 type Emo = "happy" | "neutral" | "wink" | "alarm" | "determined";
 
 interface AvatarState {
   body: string;
   color: { id: string; hex: string };
   specialty: string | null;
-  name: string;
 }
 
 // ── Scene images ──────────────────────────────────────────────────────────────
@@ -425,15 +424,15 @@ function AvatarScreen({ av, setAv, step, onBack, onFwd, knowledge }: {
   av: AvatarState; setAv: (a: AvatarState) => void;
   step: AvStep; onBack: () => void; onFwd: () => void; knowledge: number;
 }) {
-  const stepIdx = { appearance: 0, specialty: 1, name: 2 }[step];
-  const canFwd  = step === "appearance" || (step === "specialty" && !!av.specialty) || (step === "name" && !!av.name.trim());
+  const stepIdx = { appearance: 0, specialty: 1 }[step];
+  const canFwd  = step === "appearance" || (step === "specialty" && !!av.specialty);
   const selectedBody = AVATAR_BODIES.find((b) => b.id === av.body) ?? AVATAR_BODIES[0];
 
   return (
     <View style={s.flex}>
       {/* Steps indicator */}
       <View style={s.hud}>
-        {(["Izgled", "Specijalnost", "Ime"] as const).map((l, i) => (
+        {(["Izgled", "Specijalnost"] as const).map((l, i) => (
           <View key={l} style={[s.avStep, i === stepIdx && s.avStepOn, i < stepIdx && s.avStepDone]}>
             <View style={[s.avStepN, i === stepIdx && s.avStepNOn, i < stepIdx && s.avStepNDone]}>
               <Text style={{ fontFamily: T.fontBodyXBold, fontSize: 10, color: i < stepIdx ? "#fff" : i === stepIdx ? T.bg : T.hudMuted }}>
@@ -452,8 +451,7 @@ function AvatarScreen({ av, setAv, step, onBack, onFwd, knowledge }: {
           <View style={s.guideBubble}>
             <Text style={s.guideTxt}>
               {step === "appearance" && "Svaki čuvar izgleda drugačije. Kako ćeš ti? Biraj slobodno — uvijek možeš promijeniti."}
-              {step === "specialty" && "Odlično! Sad, koja ti je specijalnost? To je samo tvoj stil — svi čuvari rade sve."}
-              {step === "name"      && "Kako se zoveš, čuvaru? Upiši ime — ostatak igre te tako oslovljava."}
+              {step === "specialty" && "Odlično! Sad, koja ti je specijalnost? To je samo tvoj stil — svi čuvari rade sve. Ime već imamo iz prijave."}
             </Text>
           </View>
         </View>
@@ -461,7 +459,7 @@ function AvatarScreen({ av, setAv, step, onBack, onFwd, knowledge }: {
         {/* Preview */}
         <View style={{ alignItems: "center" }}>
           <View style={{ borderWidth: 2.5, borderColor: av.color.hex, borderRadius: 22, padding: 8, shadowColor: av.color.hex, shadowRadius: 12, shadowOpacity: 0.4 }}>
-            <View style={[s.avPreviewPh, step === "name" && { width: 90, height: 90 }]}>
+            <View style={s.avPreviewPh}>
               <Image source={selectedBody.image} style={{ width: "86%", height: "88%", resizeMode: "contain" }} />
               <View style={{ position: "absolute", right: 6, bottom: 6, width: 14, height: 14, borderRadius: 7, backgroundColor: av.color.hex, borderWidth: 2, borderColor: T.paper }} />
             </View>
@@ -529,21 +527,6 @@ function AvatarScreen({ av, setAv, step, onBack, onFwd, knowledge }: {
           </>
         )}
 
-        {step === "name" && (
-          <>
-            <Text style={s.avLabel}>Ime tvog čuvara</Text>
-            <TextInput
-              style={s.nameInput}
-              placeholder="npr. Aria, Tarik, Nina…"
-              placeholderTextColor={T.inkFaint}
-              value={av.name}
-              onChangeText={(t) => setAv({ ...av, name: t })}
-              maxLength={16}
-              autoFocus
-            />
-            <Text style={{ fontFamily: T.fontBody, color: T.hudMuted, fontSize: 12, alignSelf: "flex-end" }}>{av.name.length}/16</Text>
-          </>
-        )}
       </ScrollView>
 
       {/* Footer buttons */}
@@ -556,7 +539,7 @@ function AvatarScreen({ av, setAv, step, onBack, onFwd, knowledge }: {
           disabled={!canFwd}
           style={[s.btnPrimary, { flex: 1, opacity: canFwd ? 1 : 0.4 }]}
         >
-          <Text style={s.btnPrimaryTxt}>{step === "name" ? "Spremi i nastavi ›" : "Dalje ›"}</Text>
+          <Text style={s.btnPrimaryTxt}>{step === "specialty" ? "Spremi i nastavi ›" : "Dalje ›"}</Text>
         </TouchableOpacity>
       </View>
     </View>
@@ -779,15 +762,15 @@ export default function OnboardingScreen() {
   const [dlgLine,   setDlgLine]  = useState(0);
   const [avStep,    setAvStep]   = useState<AvStep>("appearance");
   const [av, setAv] = useState<AvatarState>({
-    body: "cuvar_a", color: AVATAR_COLORS[0], specialty: null, name: "",
+    body: "cuvar_a", color: AVATAR_COLORS[0], specialty: null,
   });
+  const agentName = user?.codename?.trim() || user?.username || "";
 
   async function finish() {
     const avatarBase = av.body.replace("cuvar_", "").toUpperCase();
     await AsyncStorage.setItem("onboardingDone", "true");
     try {
       const saved = await apiUpdateAvatar({
-        codename: av.name.trim(),
         avatarBase,
         avatarColor: av.color.hex,
         avatarGear: av.specialty ?? "none",
@@ -809,7 +792,7 @@ export default function OnboardingScreen() {
       if (user) {
         await updateUser({
           ...user,
-          codename: av.name.trim() || user.codename,
+          codename: user.codename,
           avatarBase,
           avatarColor: av.color.hex,
           avatarGear: av.specialty ?? "none",
@@ -850,7 +833,7 @@ export default function OnboardingScreen() {
 
       {step === "dlg_meet" && (
         <DialogueScreen
-          lines={DLG_MEET} line={dlgLine} avatarName={av.name}
+          lines={DLG_MEET} line={dlgLine} avatarName={agentName}
           onSkip={skipToAvatar}
           nextLabel="Hajde ›"
           bgImage={IMG_WELCOME}
@@ -866,12 +849,10 @@ export default function OnboardingScreen() {
           av={av} setAv={setAv} step={avStep} knowledge={0}
           onBack={() => {
             if (avStep === "appearance") { setStep("dlg_meet"); setDlgLine(DLG_MEET.length - 1); }
-            else if (avStep === "specialty") setAvStep("appearance");
-            else setAvStep("specialty");
+            else setAvStep("appearance");
           }}
           onFwd={() => {
             if (avStep === "appearance") setAvStep("specialty");
-            else if (avStep === "specialty") setAvStep("name");
             else setStep("choice");
           }}
         />
@@ -879,14 +860,14 @@ export default function OnboardingScreen() {
 
       {step === "choice" && (
         <ChoiceScreen
-          avatarName={av.name}
+          avatarName={agentName}
           onNext={() => { setStep("dlg_call"); setDlgLine(0); }}
         />
       )}
 
       {step === "dlg_call" && (
         <DialogueScreen
-          lines={DLG_CALL} line={dlgLine} avatarName={av.name}
+          lines={DLG_CALL} line={dlgLine} avatarName={agentName}
           onSkip={() => setStep("reward")}
           nextLabel="Idemo ›"
           bgImage={IMG_MRACKO}
@@ -898,7 +879,7 @@ export default function OnboardingScreen() {
       )}
 
       {step === "reward" && (
-        <RewardScreen avatarName={av.name} onClaim={finish} />
+        <RewardScreen avatarName={agentName} onClaim={finish} />
       )}
     </View>
   );
@@ -989,11 +970,6 @@ const s = StyleSheet.create({
     alignItems: "center", justifyContent: "center", overflow: "hidden",
   },
   avPreviewTag: { fontFamily: T.fontBody, fontSize: 9, color: T.bg, backgroundColor: T.sun, paddingHorizontal: 7, paddingVertical: 2, borderRadius: 5 },
-  nameInput: {
-    backgroundColor: T.paper, borderWidth: 2, borderColor: T.paperLine,
-    borderRadius: T.rMd, paddingHorizontal: 16, paddingVertical: 14,
-    fontFamily: T.fontHead, fontSize: 20, color: T.ink, textAlign: "center",
-  },
   avFoot: { flexDirection: "row", gap: 10, paddingHorizontal: 20, paddingBottom: 12 },
 
   // Choice

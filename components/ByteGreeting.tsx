@@ -11,9 +11,9 @@ import { apiGetByteFact } from "../lib/api";
 import { T } from "../lib/theme";
 
 let BAJT_IMG: number | null = null;
-try { BAJT_IMG = require("../assets/bajt_robot.png"); } catch { BAJT_IMG = null; }
+try { BAJT_IMG = require("../assets/images/bajt_robot.png"); } catch { BAJT_IMG = null; }
 
-export default function ByteGreeting({ visible, onClose }: { visible: boolean; onClose: () => void }) {
+export default function ByteGreeting({ visible, onClose, name }: { visible: boolean; onClose: () => void; name?: string | null }) {
   const insets = useSafeAreaInsets();
   const fade  = useRef(new Animated.Value(0)).current;
   const slide = useRef(new Animated.Value(40)).current;
@@ -94,10 +94,14 @@ export default function ByteGreeting({ visible, onClose }: { visible: boolean; o
             <Text style={{ fontFamily: T.fontHead, color: T.mint, fontSize: 15 }}>Bajt</Text>
             <View style={{ backgroundColor: "rgba(93,202,165,0.15)", borderRadius: 999, paddingHorizontal: 9, paddingVertical: 2 }}>
               <Text style={{ fontFamily: T.fontBody, color: T.mint, fontSize: 10, textTransform: "uppercase", letterSpacing: 1 }}>
-                Znaš li?
+                Dobrodošao/la nazad
               </Text>
             </View>
           </View>
+
+          <Text style={{ fontFamily: T.fontHead, color: T.hudInk, fontSize: 19, lineHeight: 24, marginBottom: 8 }}>
+            {name ? `Drago mi je što si tu, ${name}.` : "Drago mi je što si tu."}
+          </Text>
 
           {loading ? (
             <View style={{ flexDirection: "row", alignItems: "center", gap: 10, paddingVertical: 6 }}>

@@ -11,6 +11,8 @@ import {
 import { T } from "../../lib/theme";
 import LevelRing from "../../components/LevelRing";
 import ByteGreeting from "../../components/ByteGreeting";
+import { getAvatarImage } from "../../lib/avatar";
+import { getMissionStats, type MissionStats } from "../../lib/mission-progress";
 
 const XP_THRESHOLDS = [0, 100, 250, 450, 700, 1000, 1300, 1600, 1900, 2200];
 
@@ -74,6 +76,7 @@ export default function DashboardScreen() {
   const [progress, setProgress]         = useState<ProgressData | null>(null);
   const [daily, setDaily]               = useState<DailyChallenge | null | undefined>(undefined);
   const [mastery, setMastery]           = useState<Record<string, number>>({});
+  const [missionStats, setMissionStats] = useState<MissionStats | null>(null);
   const [loadingProgress, setLoading]   = useState(true);
   const [error, setError]               = useState("");
 
@@ -85,6 +88,7 @@ export default function DashboardScreen() {
       apiGetProgress().then(setProgress).catch(() => setError("Nije moguće učitati profil.")),
       apiGetDailyChallenge().then(setDaily).catch(() => setDaily(null)),
       apiGetMastery().then(setMastery).catch(() => {}),
+      getMissionStats(user.id).then(setMissionStats).catch(() => {}),
     ]).finally(() => setLoading(false));
   }, [user?.id]);
 
@@ -104,11 +108,8 @@ export default function DashboardScreen() {
     ? Math.round(masteryValues.reduce((a, b) => a + b, 0) / masteryValues.length) : 0;
   const weakestEntry = Object.entries(mastery).sort((a, b) => a[1] - b[1])[0];
 
-  const avatarColor = (() => {
-    const map: Record<string, string> = { A: T.primary, B: T.teal, C: T.coral, D: T.sun };
-    return map[user.avatarBase ?? "A"] ?? T.primary;
-  })();
-  const avatarEmoji = user.avatarBase === "B" ? "🦁" : user.avatarBase === "C" ? "🦊" : user.avatarBase === "D" ? "🐺" : "🛡️";
+  const avatarImage = getAvatarImage(user.avatarBase);
+  const missionValue = `${missionStats?.completed ?? progress?.stats.completedQuests ?? 0}/${missionStats?.total ?? progress?.stats.totalQuests ?? 0}`;
 
   return (
     <View style={{ flex: 1, backgroundColor: T.bg }}>
@@ -167,7 +168,7 @@ export default function DashboardScreen() {
                 <ActivityIndicator color={T.teal} />
               </View>
             ) : (
-              <LevelRing level={level} xpPercent={pct} size={100} avatarEmoji={avatarEmoji} />
+              <LevelRing level={level} xpPercent={pct} size={100} avatarImage={avatarImage} />
             )}
             <View style={{ flex: 1 }}>
               <Text style={{ fontFamily: T.fontBody, fontSize: 11, color: T.mint, textTransform: "uppercase", letterSpacing: 2 }}>
@@ -203,7 +204,7 @@ export default function DashboardScreen() {
         <View style={{ flexDirection: "row", gap: 10, marginBottom: 14 }}>
           {[
             { label: "Bodovi", value: points.toLocaleString(), color: T.sun },
-            { label: "Misije", value: `${progress?.stats.completedQuests ?? 0}/${progress?.stats.totalQuests ?? 0}`, color: T.mint },
+            { label: "Misije", value: missionValue, color: T.mint },
             { label: "Bedževi", value: String(progress?.stats.badgesCount ?? 0), color: T.coral },
           ].map((s) => (
             <View key={s.label} style={{
@@ -330,7 +331,11 @@ export default function DashboardScreen() {
         </View>
       </ScrollView>
 
-      <ByteGreeting visible={showByte} onClose={() => setShowByte(false)} />
+      <ByteGreeting
+        visible={showByte}
+        onClose={() => setShowByte(false)}
+        name={user.codename ?? user.username}
+      />
     </View>
   );
 }

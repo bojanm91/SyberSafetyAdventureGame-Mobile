@@ -1,6 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useState } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { apiDeleteProfile, apiLogin, apiRegister, type AuthUser } from "../lib/api";
+import { apiDeleteProfile, apiLogin, apiRegister, apiUpdateAvatar, type AuthUser } from "../lib/api";
 
 interface AuthContextType {
   user: AuthUser | null;
@@ -44,11 +44,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const login = useCallback(async (email: string, password: string): Promise<AuthUser> => {
     const res = await apiLogin(email, password);
     await AsyncStorage.setItem("csag_token", res.accessToken);
-    await AsyncStorage.setItem("csag_user", JSON.stringify(res.user));
+    let nextUser = res.user;
+    if (!nextUser.onboardingDone) {
+      try {
+        const saved = await apiUpdateAvatar({ onboardingDone: true });
+        nextUser = { ...nextUser, ...saved, onboardingDone: true };
+      } catch {
+        nextUser = { ...nextUser, onboardingDone: true };
+      }
+    }
+    await AsyncStorage.setItem("csag_user", JSON.stringify(nextUser));
+    await AsyncStorage.setItem("onboardingDone", "true");
     setToken(res.accessToken);
-    setUser(res.user);
+    setUser(nextUser);
     setJustLoggedIn(true);
-    return res.user;
+    return nextUser;
   }, []);
 
   const register = useCallback(async (username: string, email: string, password: string, confirmPassword: string): Promise<AuthUser> => {

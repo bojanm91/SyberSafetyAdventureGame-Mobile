@@ -9,9 +9,9 @@ import { LinearGradient } from "expo-linear-gradient";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import Svg, { Path } from "react-native-svg";
 import { useAuth } from "../../contexts/auth-context";
-import { apiGetScenarios, type ScenarioSummary } from "../../lib/api";
+import type { ScenarioSummary } from "../../lib/api";
 import { T } from "../../lib/theme";
-import { getLocalCompletedScenarioIds } from "../../lib/local-progress";
+import { getMergedScenarios } from "../../lib/mission-progress";
 
 // Subtle atmospheric backdrop — drawn behind a heavy dark wash so it reads as
 // texture only (the route itself is drawn in <StoryRoute/>, not in the image).
@@ -491,13 +491,8 @@ export default function MissionsScreen() {
     if (!user) return;
     setLoading(true);
     setError("");
-    apiGetScenarios()
-      .then(async (items) => {
-        const localCompleted = await getLocalCompletedScenarioIds(user.id);
-        setScenarios(items.map((s) => (
-          localCompleted.has(s.id) ? { ...s, completed: true } : s
-        )));
-      })
+    getMergedScenarios(user.id)
+      .then(setScenarios)
       .catch(() => setError("Nije moguće učitati misije."))
       .finally(() => setLoading(false));
   }, [user?.id]);

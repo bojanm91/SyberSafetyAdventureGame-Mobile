@@ -24,11 +24,6 @@ function NavigationGuard() {
       return;
     }
 
-    if (user && !user.onboardingDone && root !== "onboarding" && !authArea) {
-      router.replace("/onboarding");
-      return;
-    }
-
     if (user && user.onboardingDone && (authArea || root === "onboarding")) {
       router.replace("/(tabs)");
     }
