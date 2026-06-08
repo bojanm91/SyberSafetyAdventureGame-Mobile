@@ -287,3 +287,23 @@ export interface ByteFact {
 export function apiGetByteFact() {
   return request<ByteFact>("/game/byte-fact");
 }
+
+export function apiRegisterPushToken(data: { token: string; platform?: "ios" | "android" | "web" | "unknown" }) {
+  return request<{ registered: boolean }>("/notifications/push-token", {
+    method: "POST",
+    body: JSON.stringify(data),
+  });
+}
+
+export function apiUnregisterPushToken(data: { token: string; platform?: "ios" | "android" | "web" | "unknown" }) {
+  return request<{ registered: boolean }>("/notifications/push-token", {
+    method: "DELETE",
+    body: JSON.stringify(data),
+  });
+}
+
+export function apiSendTestNotification() {
+  return request<{ sent: number; tickets: unknown }>("/notifications/test", {
+    method: "POST",
+  });
+}

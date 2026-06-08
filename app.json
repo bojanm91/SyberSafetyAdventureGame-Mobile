@@ -22,10 +22,17 @@
     },
     "plugins": [
       "expo-router",
-      "expo-asset"
+      "expo-asset",
+      "expo-notifications"
     ],
     "experiments": {
       "typedRoutes": true
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "ed18f354-8391-4fba-98da-79e8e991eed8"
+      }
     }
   }
 }

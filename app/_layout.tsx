@@ -4,6 +4,7 @@ import { SafeAreaProvider } from "react-native-safe-area-context";
 import { StatusBar } from "expo-status-bar";
 import { useFonts } from "expo-font";
 import { View, ActivityIndicator } from "react-native";
+import * as Notifications from "expo-notifications";
 import { AuthProvider, useAuth } from "../contexts/auth-context";
 import "../global.css";
 
@@ -28,6 +29,22 @@ function NavigationGuard() {
       router.replace("/(tabs)");
     }
   }, [user, loading, segments]);
+
+  return null;
+}
+
+function NotificationNavigation() {
+  const router = useRouter();
+
+  useEffect(() => {
+    const sub = Notifications.addNotificationResponseReceivedListener((response) => {
+      const url = response.notification.request.content.data?.url;
+      if (typeof url === "string") {
+        router.push(url as never);
+      }
+    });
+    return () => sub.remove();
+  }, [router]);
 
   return null;
 }
@@ -62,6 +79,7 @@ export default function RootLayout() {
     <SafeAreaProvider>
       <AuthProvider>
         <NavigationGuard />
+        <NotificationNavigation />
         <StatusBar style="light" backgroundColor="#0F1830" />
         <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: "#0F1830" } }}>
           <Stack.Screen name="index" />

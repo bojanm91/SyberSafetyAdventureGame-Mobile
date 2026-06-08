@@ -11,6 +11,12 @@ import LevelRing from "../../components/LevelRing";
 import RadarChart from "../../components/RadarChart";
 import { getAvatarImage } from "../../lib/avatar";
 import { getMissionStats, type MissionStats } from "../../lib/mission-progress";
+import {
+  isPushEnabled,
+  registerForPushNotifications,
+  sendTestPushNotification,
+  unregisterPushNotifications,
+} from "../../lib/notifications";
 
 const TOPIC_ICONS: Record<string, string> = {
   lozinke: "🔑", phishing: "📧", privatnost: "🛡️", malver: "☣️",
@@ -73,6 +79,8 @@ export default function ProfileScreen() {
   const [mastery, setMastery]       = useState<Record<string, number>>({});
   const [xpHistory, setXpHistory]   = useState<{ date: string; xp: number }[]>([]);
   const [missionStats, setMissionStats] = useState<MissionStats | null>(null);
+  const [pushEnabled, setPushEnabled] = useState(false);
+  const [pushBusy, setPushBusy]       = useState(false);
   const [deleting, setDeleting]     = useState(false);
   const { width: screenWidth }      = useWindowDimensions();
   const chartWidth                  = screenWidth - 64;
@@ -83,6 +91,7 @@ export default function ProfileScreen() {
     apiGetMastery().then(setMastery).catch(console.error);
     apiGetXpHistory().then(setXpHistory).catch(console.error);
     getMissionStats(user.id).then(setMissionStats).catch(console.error);
+    isPushEnabled(user.id).then(setPushEnabled).catch(() => setPushEnabled(false));
   }, [user?.id]);
 
   useFocusEffect(loadProfile);
@@ -128,6 +137,47 @@ export default function ProfileScreen() {
         "Brisanje nije uspjelo",
         err instanceof Error ? err.message : "Pokušaj ponovo za nekoliko trenutaka.",
       );
+    }
+  }
+
+  async function enablePush() {
+    if (!user || pushBusy) return;
+    setPushBusy(true);
+    try {
+      await registerForPushNotifications(user.id);
+      setPushEnabled(true);
+      Alert.alert("Push uključen", "Bajt sada može da ti šalje podsjetnike i dnevne cyber izazove.");
+    } catch (err) {
+      Alert.alert("Push nije uključen", err instanceof Error ? err.message : "Pokušaj ponovo sa fizičkog uređaja.");
+    } finally {
+      setPushBusy(false);
+    }
+  }
+
+  async function disablePush() {
+    if (!user || pushBusy) return;
+    setPushBusy(true);
+    try {
+      await unregisterPushNotifications(user.id);
+      setPushEnabled(false);
+    } finally {
+      setPushBusy(false);
+    }
+  }
+
+  async function sendTestPush() {
+    if (pushBusy) return;
+    setPushBusy(true);
+    try {
+      const res = await sendTestPushNotification();
+      Alert.alert(
+        res.sent > 0 ? "Test poslat" : "Nema tokena",
+        res.sent > 0 ? "Provjeri notifikaciju na telefonu." : "Prvo uključi push notifikacije.",
+      );
+    } catch (err) {
+      Alert.alert("Test nije poslat", err instanceof Error ? err.message : "Backend nije uspio da pošalje push.");
+    } finally {
+      setPushBusy(false);
     }
   }
 
@@ -300,6 +350,54 @@ export default function ProfileScreen() {
               </TouchableOpacity>
             </View>
           )}
+        </View>
+
+        {/* Push notifications */}
+        <View style={card}>
+          <Text style={sectionLabel}>Push notifikacije</Text>
+          <Text style={{ fontFamily: T.fontBody, color: T.hudMuted, fontSize: 13, lineHeight: 20, marginBottom: 12 }}>
+            Bajt može da ti pošalje podsjetnik za dnevni izazov, streak ili novu oblast.
+          </Text>
+          <View style={{ flexDirection: "row", gap: 10, flexWrap: "wrap" }}>
+            <TouchableOpacity
+              onPress={pushEnabled ? disablePush : enablePush}
+              disabled={pushBusy}
+              style={{
+                flexGrow: 1,
+                backgroundColor: pushEnabled ? "rgba(239,68,68,0.1)" : T.tealDeep,
+                borderColor: pushEnabled ? "rgba(239,68,68,0.45)" : T.teal,
+                borderWidth: 1,
+                borderRadius: T.rPill,
+                paddingHorizontal: 16,
+                paddingVertical: 11,
+                alignItems: "center",
+                opacity: pushBusy ? 0.65 : 1,
+              }}
+            >
+              {pushBusy ? (
+                <ActivityIndicator color={pushEnabled ? T.bad : "#fff"} />
+              ) : (
+                <Text style={{ fontFamily: T.fontBodyXBold, color: pushEnabled ? T.bad : "#fff", fontSize: 13 }}>
+                  {pushEnabled ? "Isključi push" : "Uključi push"}
+                </Text>
+              )}
+            </TouchableOpacity>
+            <TouchableOpacity
+              onPress={sendTestPush}
+              disabled={pushBusy}
+              style={{
+                borderColor: T.border,
+                borderWidth: 1,
+                borderRadius: T.rPill,
+                paddingHorizontal: 16,
+                paddingVertical: 11,
+                alignItems: "center",
+                opacity: pushBusy ? 0.65 : 1,
+              }}
+            >
+              <Text style={{ fontFamily: T.fontBodyXBold, color: T.hudInk, fontSize: 13 }}>Pošalji test</Text>
+            </TouchableOpacity>
+          </View>
         </View>
 
         {/* Logout */}

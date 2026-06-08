@@ -1,6 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useState } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { apiDeleteProfile, apiLogin, apiRegister, apiUpdateAvatar, type AuthUser } from "../lib/api";
+import { unregisterPushNotifications } from "../lib/notifications";
 
 interface AuthContextType {
   user: AuthUser | null;
@@ -72,14 +73,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const logout = useCallback(async () => {
+    if (user?.id) await unregisterPushNotifications(user.id);
     await AsyncStorage.multiRemove(["csag_token", "csag_user"]);
     setToken(null);
     setUser(null);
     setJustLoggedIn(false);
-  }, []);
+  }, [user?.id]);
 
   const deleteProfile = useCallback(async () => {
     const userId = user?.id;
+    if (userId) await unregisterPushNotifications(userId);
     await apiDeleteProfile();
     await AsyncStorage.multiRemove([
       "csag_token",
