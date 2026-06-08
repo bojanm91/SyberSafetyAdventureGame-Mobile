@@ -1,0 +1,54 @@
+name: Build Android APK
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - uses: expo/expo-github-action@v8
+        with:
+          eas-version: latest
+          token: ${{ secrets.EXPO_TOKEN }}
+
+      - name: Build APK
+        run: eas build --platform android --profile preview --non-interactive
+
+      - name: Get APK URL
+        id: apk
+        run: |
+          URL=$(eas build:list --platform android --limit 1 --json --non-interactive | \
+            node -e "const d=require('fs').readFileSync('/dev/stdin','utf8'); console.log(JSON.parse(d)[0].artifacts?.buildUrl ?? '')")
+          echo "url=$URL" >> $GITHUB_OUTPUT
+
+      - name: Download APK
+        run: curl -L "${{ steps.apk.outputs.url }}" -o csag-mobile.apk
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          name: "CyberSafety ${{ github.ref_name }}"
+          body: |
+            ## Instalacija na Android
+
+            1. Skini `csag-mobile.apk` ispod
+            2. Otvori preuzeti fajl na telefonu
+            3. Ako te pita, dozvoli **"Instaliraj iz nepoznatih izvora"**
+            4. Instaliraj i uživaj!
+          files: csag-mobile.apk
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
