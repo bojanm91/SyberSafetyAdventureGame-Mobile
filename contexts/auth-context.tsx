@@ -1,15 +1,18 @@
 import { createContext, useCallback, useContext, useEffect, useState } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { apiLogin, apiRegister, type AuthUser } from "../lib/api";
+import { apiDeleteProfile, apiLogin, apiRegister, type AuthUser } from "../lib/api";
 
 interface AuthContextType {
   user: AuthUser | null;
   token: string | null;
   loading: boolean;
-  login: (email: string, password: string) => Promise<void>;
-  register: (username: string, email: string, password: string, confirmPassword: string) => Promise<void>;
+  justLoggedIn: boolean;
+  login: (email: string, password: string) => Promise<AuthUser>;
+  register: (username: string, email: string, password: string, confirmPassword: string) => Promise<AuthUser>;
   logout: () => void;
+  deleteProfile: () => Promise<void>;
   updateUser: (user: AuthUser) => void;
+  ackLogin: () => void;
 }
 
 const AuthContext = createContext<AuthContextType | null>(null);
@@ -18,6 +21,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<AuthUser | null>(null);
   const [token, setToken] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [justLoggedIn, setJustLoggedIn] = useState(false);
 
   useEffect(() => {
     async function restore() {
@@ -37,35 +41,55 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     void restore();
   }, []);
 
-  const login = useCallback(async (email: string, password: string) => {
+  const login = useCallback(async (email: string, password: string): Promise<AuthUser> => {
     const res = await apiLogin(email, password);
     await AsyncStorage.setItem("csag_token", res.accessToken);
     await AsyncStorage.setItem("csag_user", JSON.stringify(res.user));
     setToken(res.accessToken);
     setUser(res.user);
+    setJustLoggedIn(true);
+    return res.user;
   }, []);
 
-  const register = useCallback(async (username: string, email: string, password: string, confirmPassword: string) => {
+  const register = useCallback(async (username: string, email: string, password: string, confirmPassword: string): Promise<AuthUser> => {
     const res = await apiRegister(username, email, password, confirmPassword);
     await AsyncStorage.setItem("csag_token", res.accessToken);
     await AsyncStorage.setItem("csag_user", JSON.stringify(res.user));
     setToken(res.accessToken);
     setUser(res.user);
+    setJustLoggedIn(true);
+    return res.user;
   }, []);
 
   const logout = useCallback(async () => {
     await AsyncStorage.multiRemove(["csag_token", "csag_user"]);
     setToken(null);
     setUser(null);
+    setJustLoggedIn(false);
   }, []);
+
+  const deleteProfile = useCallback(async () => {
+    const userId = user?.id;
+    await apiDeleteProfile();
+    await AsyncStorage.multiRemove([
+      "csag_token",
+      "csag_user",
+      ...(userId ? [`csag_completed_scenarios_${userId}`] : []),
+    ]);
+    setToken(null);
+    setUser(null);
+    setJustLoggedIn(false);
+  }, [user?.id]);
 
   const updateUser = useCallback(async (updated: AuthUser) => {
     setUser(updated);
     await AsyncStorage.setItem("csag_user", JSON.stringify(updated));
   }, []);
 
+  const ackLogin = useCallback(() => setJustLoggedIn(false), []);
+
   return (
-    <AuthContext.Provider value={{ user, token, loading, login, register, logout: () => void logout(), updateUser: (u) => void updateUser(u) }}>
+    <AuthContext.Provider value={{ user, token, loading, justLoggedIn, login, register, logout: () => void logout(), deleteProfile, updateUser: (u) => void updateUser(u), ackLogin }}>
       {children}
     </AuthContext.Provider>
   );

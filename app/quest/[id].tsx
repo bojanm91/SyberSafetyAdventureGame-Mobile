@@ -49,9 +49,7 @@ export default function QuestScreen() {
       const res = await apiSubmitAnswer(quest.id, selectedOptionId, usedHint);
       setResult(res);
       updateUser({
-        id: user!.id,
-        username: user!.username,
-        email: user!.email,
+        ...user!,
         status: res.user.status,
         level: res.user.level,
         points: res.user.points,
@@ -279,7 +277,7 @@ export default function QuestScreen() {
             </TouchableOpacity>
             <TouchableOpacity
               className="flex-1 bg-cyan rounded-2xl py-3 items-center"
-              onPress={() => router.push("/(tabs)/")}
+              onPress={() => router.push("/(tabs)")}
             >
               <Text className="text-[#04111f] text-sm font-semibold">Dashboard →</Text>
             </TouchableOpacity>

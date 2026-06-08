@@ -1,6 +1,6 @@
 import { useState } from "react";
 import {
-  View, Text, TextInput, TouchableOpacity,
+  View, Text, TextInput, TouchableOpacity, Image,
   KeyboardAvoidingView, Platform, ScrollView, ActivityIndicator,
 } from "react-native";
 import { useRouter, Link } from "expo-router";
@@ -9,6 +9,9 @@ import { LinearGradient } from "expo-linear-gradient";
 import { useAuth } from "../contexts/auth-context";
 import { T } from "../lib/theme";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+
+let BG_LOGIN: number | null = null;
+try { BG_LOGIN = require("../assets/images/bg_login.jpg"); } catch { BG_LOGIN = null; }
 
 export default function LoginScreen() {
   const { login } = useAuth();
@@ -24,9 +27,14 @@ export default function LoginScreen() {
     setError("");
     setLoading(true);
     try {
-      await login(email, password);
-      const done = await AsyncStorage.getItem("onboardingDone");
-      router.replace(done === "true" ? "/(tabs)/" : "/onboarding");
+      const loggedUser = await login(email, password);
+      // Returning users: use backend flag; sync to AsyncStorage so index.tsx agrees
+      if (loggedUser.onboardingDone) {
+        await AsyncStorage.setItem("onboardingDone", "true");
+        router.replace("/(tabs)");
+      } else {
+        router.replace("/onboarding");
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Greška pri prijavi.");
     } finally {
@@ -39,12 +47,19 @@ export default function LoginScreen() {
       style={{ flex: 1, backgroundColor: T.bg }}
       behavior={Platform.OS === "ios" ? "padding" : "height"}
     >
-      {/* Scene gradient */}
-      <LinearGradient
-        colors={[T.scene1, T.scene2, T.bg]}
-        locations={[0, 0.5, 1]}
-        style={{ position: "absolute", inset: 0 }}
-      />
+      {/* Scene background — image if available, gradient fallback */}
+      {BG_LOGIN ? (
+        <>
+          <Image source={BG_LOGIN} style={{ position: "absolute", inset: 0, width: "100%", height: "100%", resizeMode: "cover" }} />
+          <View style={{ position: "absolute", inset: 0, backgroundColor: "rgba(6,14,30,0.78)" }} />
+        </>
+      ) : (
+        <LinearGradient
+          colors={[T.scene1, T.scene2, T.bg]}
+          locations={[0, 0.5, 1]}
+          style={{ position: "absolute", inset: 0 }}
+        />
+      )}
 
       <ScrollView
         contentContainerStyle={{

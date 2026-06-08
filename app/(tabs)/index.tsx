@@ -1,6 +1,6 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { View, Text, ScrollView, TouchableOpacity, ActivityIndicator } from "react-native";
-import { useRouter } from "expo-router";
+import { useFocusEffect, useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
 import { useAuth } from "../../contexts/auth-context";
@@ -10,6 +10,7 @@ import {
 } from "../../lib/api";
 import { T } from "../../lib/theme";
 import LevelRing from "../../components/LevelRing";
+import ByteGreeting from "../../components/ByteGreeting";
 
 const XP_THRESHOLDS = [0, 100, 250, 450, 700, 1000, 1300, 1600, 1900, 2200];
 
@@ -56,9 +57,19 @@ function KnowledgeBar({ pct }: { pct: number }) {
 }
 
 export default function DashboardScreen() {
-  const { user, logout } = useAuth();
+  const { user, logout, justLoggedIn, ackLogin } = useAuth();
   const router = useRouter();
   const insets = useSafeAreaInsets();
+
+  const [showByte, setShowByte] = useState(false);
+
+  // Pri svježoj prijavi: Bajt iskoči sa zanimljivom činjenicom (jednom).
+  useEffect(() => {
+    if (justLoggedIn) {
+      setShowByte(true);
+      ackLogin();
+    }
+  }, [justLoggedIn]);
 
   const [progress, setProgress]         = useState<ProgressData | null>(null);
   const [daily, setDaily]               = useState<DailyChallenge | null | undefined>(undefined);
@@ -66,14 +77,18 @@ export default function DashboardScreen() {
   const [loadingProgress, setLoading]   = useState(true);
   const [error, setError]               = useState("");
 
-  useEffect(() => {
+  const loadDashboard = useCallback(() => {
     if (!user) return;
+    setLoading(true);
+    setError("");
     Promise.all([
       apiGetProgress().then(setProgress).catch(() => setError("Nije moguće učitati profil.")),
       apiGetDailyChallenge().then(setDaily).catch(() => setDaily(null)),
       apiGetMastery().then(setMastery).catch(() => {}),
     ]).finally(() => setLoading(false));
-  }, [user]);
+  }, [user?.id]);
+
+  useFocusEffect(loadDashboard);
 
   if (!user) return null;
 
@@ -106,6 +121,7 @@ export default function DashboardScreen() {
       <ScrollView
         style={{ flex: 1 }}
         contentContainerStyle={{ paddingTop: insets.top + 12, paddingBottom: 24, paddingHorizontal: 16 }}
+        showsVerticalScrollIndicator={false}
       >
         {/* Top bar */}
         <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
@@ -313,6 +329,8 @@ export default function DashboardScreen() {
           </TouchableOpacity>
         </View>
       </ScrollView>
+
+      <ByteGreeting visible={showByte} onClose={() => setShowByte(false)} />
     </View>
   );
 }

@@ -16,6 +16,7 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
   };
   if (token) headers["Authorization"] = `Bearer ${token}`;
 
+
   const res = await fetch(`${BASE_URL}${path}`, { ...options, headers });
   if (!res.ok) {
     const err = await res.json().catch(() => ({ message: "Greška na serveru." }));
@@ -55,6 +56,12 @@ export function apiRegister(username: string, email: string, password: string, c
   return request<AuthResponse>("/auth/register", {
     method: "POST",
     body: JSON.stringify({ username, email, password, confirmPassword }),
+  });
+}
+
+export function apiDeleteProfile() {
+  return request<{ deleted: boolean }>("/auth/me", {
+    method: "DELETE",
   });
 }
 
@@ -270,4 +277,13 @@ export function apiGetMastery() {
 
 export function apiGetXpHistory() {
   return request<Array<{ date: string; xp: number }>>("/game/xp-history");
+}
+
+export interface ByteFact {
+  fact: string;
+  source: "ai" | "fallback";
+}
+
+export function apiGetByteFact() {
+  return request<ByteFact>("/game/byte-fact");
 }

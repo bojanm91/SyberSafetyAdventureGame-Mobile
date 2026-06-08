@@ -1,8 +1,8 @@
-import { useEffect, useState } from "react";
-import { View, Text, ScrollView, TouchableOpacity, useWindowDimensions } from "react-native";
+import { useCallback, useState } from "react";
+import { ActivityIndicator, Alert, View, Text, ScrollView, TouchableOpacity, useWindowDimensions } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
-import { useRouter } from "expo-router";
+import { useFocusEffect, useRouter } from "expo-router";
 import Svg, { Rect, Line, Text as SvgText, Path } from "react-native-svg";
 import { useAuth } from "../../contexts/auth-context";
 import { apiGetProgress, apiGetMastery, apiGetXpHistory, type ProgressData } from "../../lib/api";
@@ -64,21 +64,24 @@ function XpLineChart({ data, width, height }: { data: { date: string; xp: number
 }
 
 export default function ProfileScreen() {
-  const { user, logout } = useAuth();
+  const { user, logout, deleteProfile } = useAuth();
   const router           = useRouter();
   const insets           = useSafeAreaInsets();
   const [progress, setProgress]     = useState<ProgressData | null>(null);
   const [mastery, setMastery]       = useState<Record<string, number>>({});
   const [xpHistory, setXpHistory]   = useState<{ date: string; xp: number }[]>([]);
+  const [deleting, setDeleting]     = useState(false);
   const { width: screenWidth }      = useWindowDimensions();
   const chartWidth                  = screenWidth - 64;
 
-  useEffect(() => {
+  const loadProfile = useCallback(() => {
     if (!user) return;
     apiGetProgress().then(setProgress).catch(console.error);
     apiGetMastery().then(setMastery).catch(console.error);
     apiGetXpHistory().then(setXpHistory).catch(console.error);
-  }, [user]);
+  }, [user?.id]);
+
+  useFocusEffect(loadProfile);
 
   if (!user) return null;
   const p      = progress;
@@ -93,6 +96,36 @@ export default function ProfileScreen() {
   const card = { backgroundColor: T.panel, borderColor: T.border, borderWidth: 1, borderRadius: T.rLg, padding: 16, marginBottom: 14 };
   const sectionLabel = { fontFamily: T.fontBody, fontSize: 11, color: T.mint, textTransform: "uppercase" as const, letterSpacing: 1.5, marginBottom: 12 };
 
+  function confirmDeleteProfile() {
+    Alert.alert(
+      "Obrisati profil?",
+      "Ova akcija trajno briše tvoj nalog, bodove, misije i bedževe. Ne može se poništiti.",
+      [
+        { text: "Odustani", style: "cancel" },
+        {
+          text: "Obriši profil",
+          style: "destructive",
+          onPress: () => void handleDeleteProfile(),
+        },
+      ],
+    );
+  }
+
+  async function handleDeleteProfile() {
+    if (deleting) return;
+    setDeleting(true);
+    try {
+      await deleteProfile();
+      router.replace("/register");
+    } catch (err) {
+      setDeleting(false);
+      Alert.alert(
+        "Brisanje nije uspjelo",
+        err instanceof Error ? err.message : "Pokušaj ponovo za nekoliko trenutaka.",
+      );
+    }
+  }
+
   return (
     <View style={{ flex: 1, backgroundColor: T.bg }}>
       <LinearGradient
@@ -103,6 +136,7 @@ export default function ProfileScreen() {
       <ScrollView
         style={{ flex: 1 }}
         contentContainerStyle={{ paddingTop: insets.top + 12, paddingBottom: 24, paddingHorizontal: 16 }}
+        showsVerticalScrollIndicator={false}
       >
         {/* Profile card */}
         <View style={{ ...card, borderColor: "rgba(24,165,130,0.25)" }}>
@@ -269,6 +303,27 @@ export default function ProfileScreen() {
           style={{ borderColor: T.border, borderWidth: 1, borderRadius: T.rMd, paddingVertical: 14, alignItems: "center" }}
         >
           <Text style={{ fontFamily: T.fontBody, color: T.hudMuted, fontSize: 14 }}>Odjavi se</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          onPress={confirmDeleteProfile}
+          disabled={deleting}
+          style={{
+            marginTop: 10,
+            borderColor: "rgba(239,68,68,0.55)",
+            backgroundColor: "rgba(239,68,68,0.08)",
+            borderWidth: 1.5,
+            borderRadius: T.rMd,
+            paddingVertical: 14,
+            alignItems: "center",
+            opacity: deleting ? 0.65 : 1,
+          }}
+        >
+          {deleting ? (
+            <ActivityIndicator color={T.bad} />
+          ) : (
+            <Text style={{ fontFamily: T.fontBodyXBold, color: T.bad, fontSize: 14 }}>Obriši profil</Text>
+          )}
         </TouchableOpacity>
       </ScrollView>
     </View>

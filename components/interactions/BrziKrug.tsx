@@ -32,6 +32,7 @@ export default function BrziKrug({ gameData, correctData, onAnswer, answered, re
   const [started, setStarted] = useState(false);
   const [finished, setFinished] = useState(false);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const answersRef = useRef<number[]>([]);
   const barWidth = useRef(new Animated.Value(1)).current;
 
   function startGame() {
@@ -49,7 +50,7 @@ export default function BrziKrug({ gameData, correctData, onAnswer, answered, re
       setTimeLeft((t) => {
         if (t <= 1) {
           clearInterval(timerRef.current!);
-          finishGame(answers);
+          finishGame(answersRef.current);
           return 0;
         }
         return t - 1;
@@ -62,6 +63,7 @@ export default function BrziKrug({ gameData, correctData, onAnswer, answered, re
     if (finished || answered) return;
     void Haptics.selectionAsync();
     const newAnswers = [...answers, idx];
+    answersRef.current = newAnswers;
     setAnswers(newAnswers);
 
     if (current + 1 >= gameData.pitanja.length) {

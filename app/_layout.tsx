@@ -15,9 +15,22 @@ function NavigationGuard() {
 
   useEffect(() => {
     if (loading) return;
-    const inAuthArea = segments[0] === "(tabs)";
-    if (!user && inAuthArea) {
+    const root = segments[0];
+    const protectedArea = root === "(tabs)" || root === "game" || root === "quest" || root === "onboarding";
+    const authArea = root === "login" || root === "register";
+
+    if (!user && protectedArea) {
       router.replace("/login");
+      return;
+    }
+
+    if (user && !user.onboardingDone && root !== "onboarding" && !authArea) {
+      router.replace("/onboarding");
+      return;
+    }
+
+    if (user && user.onboardingDone && (authArea || root === "onboarding")) {
+      router.replace("/(tabs)");
     }
   }, [user, loading, segments]);
 
