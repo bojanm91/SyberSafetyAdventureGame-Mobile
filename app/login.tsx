@@ -1,26 +1,23 @@
 import { useState } from "react";
 import {
-  View,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  KeyboardAvoidingView,
-  Platform,
-  ScrollView,
-  ActivityIndicator,
+  View, Text, TextInput, TouchableOpacity,
+  KeyboardAvoidingView, Platform, ScrollView, ActivityIndicator,
 } from "react-native";
 import { useRouter, Link } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { LinearGradient } from "expo-linear-gradient";
 import { useAuth } from "../contexts/auth-context";
+import { T } from "../lib/theme";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 export default function LoginScreen() {
   const { login } = useAuth();
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const [email, setEmail] = useState("");
+  const [email, setEmail]       = useState("");
   const [password, setPassword] = useState("");
-  const [error, setError] = useState("");
-  const [loading, setLoading] = useState(false);
+  const [error, setError]       = useState("");
+  const [loading, setLoading]   = useState(false);
 
   async function handleLogin() {
     if (!email || !password) return;
@@ -28,7 +25,8 @@ export default function LoginScreen() {
     setLoading(true);
     try {
       await login(email, password);
-      router.replace("/(tabs)/");
+      const done = await AsyncStorage.getItem("onboardingDone");
+      router.replace(done === "true" ? "/(tabs)/" : "/onboarding");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Greška pri prijavi.");
     } finally {
@@ -38,34 +36,75 @@ export default function LoginScreen() {
 
   return (
     <KeyboardAvoidingView
-      className="flex-1 bg-bg"
+      style={{ flex: 1, backgroundColor: T.bg }}
       behavior={Platform.OS === "ios" ? "padding" : "height"}
     >
+      {/* Scene gradient */}
+      <LinearGradient
+        colors={[T.scene1, T.scene2, T.bg]}
+        locations={[0, 0.5, 1]}
+        style={{ position: "absolute", inset: 0 }}
+      />
+
       <ScrollView
-        contentContainerStyle={{ flexGrow: 1, paddingTop: insets.top, paddingBottom: insets.bottom + 24 }}
+        contentContainerStyle={{
+          flexGrow: 1,
+          paddingTop: insets.top + 16,
+          paddingBottom: insets.bottom + 24,
+          paddingHorizontal: 24,
+        }}
         keyboardShouldPersistTaps="handled"
       >
-        <View className="flex-1 px-6 justify-center">
+        <View style={{ flex: 1, justifyContent: "center" }}>
           {/* Logo */}
-          <View className="mb-10">
-            <View className="w-14 h-14 rounded-2xl bg-cyan/20 items-center justify-center mb-4">
-              <Text className="text-2xl">⛨</Text>
+          <View style={{ marginBottom: 32, alignItems: "flex-start" }}>
+            <View style={{
+              width: 56, height: 56, borderRadius: 18,
+              backgroundColor: T.primarySoft,
+              borderWidth: 2, borderColor: T.primaryInk,
+              alignItems: "center", justifyContent: "center",
+              marginBottom: 16,
+            }}>
+              <Text style={{ fontSize: 26 }}>⛨</Text>
             </View>
-            <Text className="text-white text-2xl font-bold">CyberSafety</Text>
-            <Text className="text-slate-500 text-xs tracking-widest uppercase mt-0.5">Adventure Game</Text>
+            <Text style={{ fontFamily: T.fontHead, fontSize: 26, color: T.hudInk, lineHeight: 30 }}>
+              Akademija Sajber Čuvara
+            </Text>
+            <Text style={{ fontFamily: T.fontBody, fontSize: 13, color: T.hudMuted, marginTop: 4, letterSpacing: 1, textTransform: "uppercase" }}>
+              Prijava agenta
+            </Text>
           </View>
 
-          {/* Card */}
-          <View className="bg-panel border border-cyan/20 rounded-3xl p-6">
-            <Text className="text-white text-2xl font-bold mb-1">Dobrodošao nazad</Text>
-            <Text className="text-slate-400 text-sm mb-6">Nastavi svoju cyber avanturu.</Text>
+          {/* Form card (paper dialog style) */}
+          <View style={{
+            backgroundColor: T.paper,
+            borderRadius: T.rLg,
+            borderWidth: 2.5,
+            borderColor: T.paperLine,
+            padding: 22,
+            ...T.shadowCard,
+          }}>
+            <Text style={{ fontFamily: T.fontHead, fontSize: 22, color: T.ink, marginBottom: 4 }}>
+              Dobrodošao nazad
+            </Text>
+            <Text style={{ fontFamily: T.fontBody, fontSize: 14, color: T.inkSoft, marginBottom: 20 }}>
+              Nastavi svoju cyber avanturu.
+            </Text>
 
             {/* Email */}
-            <Text className="text-slate-400 text-xs uppercase tracking-widest mb-2">Email</Text>
+            <Text style={{ fontFamily: T.fontBody, fontSize: 11, color: T.inkSoft, letterSpacing: 1, textTransform: "uppercase", marginBottom: 8 }}>
+              Email
+            </Text>
             <TextInput
-              className="w-full bg-white/5 border border-white/10 rounded-2xl px-4 py-3.5 text-white text-sm mb-4"
+              style={{
+                backgroundColor: "rgba(38,37,34,0.06)",
+                borderWidth: 2, borderColor: T.paperLine,
+                borderRadius: T.rMd, paddingHorizontal: 16, paddingVertical: 13,
+                fontFamily: T.fontBody, fontSize: 15, color: T.ink,
+                marginBottom: 14,
+              }}
               placeholder="agent@example.com"
-              placeholderTextColor="#475569"
+              placeholderTextColor={T.inkFaint}
               value={email}
               onChangeText={setEmail}
               keyboardType="email-address"
@@ -74,11 +113,19 @@ export default function LoginScreen() {
             />
 
             {/* Password */}
-            <Text className="text-slate-400 text-xs uppercase tracking-widest mb-2">Lozinka</Text>
+            <Text style={{ fontFamily: T.fontBody, fontSize: 11, color: T.inkSoft, letterSpacing: 1, textTransform: "uppercase", marginBottom: 8 }}>
+              Lozinka
+            </Text>
             <TextInput
-              className="w-full bg-white/5 border border-white/10 rounded-2xl px-4 py-3.5 text-white text-sm mb-4"
+              style={{
+                backgroundColor: "rgba(38,37,34,0.06)",
+                borderWidth: 2, borderColor: T.paperLine,
+                borderRadius: T.rMd, paddingHorizontal: 16, paddingVertical: 13,
+                fontFamily: T.fontBody, fontSize: 15, color: T.ink,
+                marginBottom: 14,
+              }}
               placeholder="••••••••"
-              placeholderTextColor="#475569"
+              placeholderTextColor={T.inkFaint}
               value={password}
               onChangeText={setPassword}
               secureTextEntry
@@ -87,32 +134,44 @@ export default function LoginScreen() {
 
             {/* Error */}
             {error ? (
-              <View className="bg-rose/10 border border-rose/20 rounded-2xl px-4 py-3 mb-4">
-                <Text className="text-rose text-sm">{error}</Text>
+              <View style={{
+                backgroundColor: T.badSoft,
+                borderWidth: 2, borderColor: T.bad,
+                borderRadius: T.rMd, paddingHorizontal: 14, paddingVertical: 10,
+                marginBottom: 14,
+              }}>
+                <Text style={{ fontFamily: T.fontBody, color: T.badInk, fontSize: 13 }}>{error}</Text>
               </View>
             ) : null}
 
-            {/* Button */}
+            {/* CTA button */}
             <TouchableOpacity
-              className="w-full bg-cyan rounded-2xl py-4 items-center mt-1"
               onPress={() => void handleLogin()}
               disabled={loading}
-              style={{ opacity: loading ? 0.6 : 1 }}
+              style={{
+                backgroundColor: T.tealDeep,
+                borderRadius: T.rPill,
+                paddingVertical: 16,
+                alignItems: "center",
+                opacity: loading ? 0.6 : 1,
+                borderBottomWidth: 4,
+                borderBottomColor: "#08634A",
+              }}
             >
               {loading ? (
-                <ActivityIndicator color="#04111f" />
+                <ActivityIndicator color="#fff" />
               ) : (
-                <Text className="text-[#04111f] font-semibold text-sm">Prijavi se</Text>
+                <Text style={{ fontFamily: T.fontHead, fontSize: 17, color: "#fff" }}>Prijavi se</Text>
               )}
             </TouchableOpacity>
           </View>
 
           {/* Footer */}
-          <View className="flex-row justify-center mt-6 gap-1">
-            <Text className="text-slate-400 text-sm">Nemaš nalog?</Text>
+          <View style={{ flexDirection: "row", justifyContent: "center", marginTop: 20, gap: 4 }}>
+            <Text style={{ fontFamily: T.fontBody, color: T.hudMuted, fontSize: 14 }}>Nemaš nalog?</Text>
             <Link href="/register" asChild>
               <TouchableOpacity>
-                <Text className="text-cyan text-sm">Registruj se</Text>
+                <Text style={{ fontFamily: T.fontBody, color: T.mint, fontSize: 14 }}>Registruj se</Text>
               </TouchableOpacity>
             </Link>
           </View>
