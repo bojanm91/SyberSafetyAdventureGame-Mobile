@@ -1,11 +1,12 @@
 {
   "expo": {
-    "name": "CyberSafety",
+    "name": "CyberSafe Akademija",
     "slug": "csag-mobile",
-    "version": "1.0.0",
+    "version": "1.0.1",
     "orientation": "portrait",
     "scheme": "csag",
     "userInterfaceStyle": "dark",
+    "icon": "./assets/images/app_icon.png",
     "splash": {
       "resizeMode": "contain",
       "backgroundColor": "#050816"
@@ -16,7 +17,8 @@
     },
     "android": {
       "adaptiveIcon": {
-        "backgroundColor": "#050816"
+        "foregroundImage": "./assets/images/app_icon_foreground.png",
+        "backgroundColor": "#FFFFFF"
       },
       "package": "com.csag.mobile"
     },

@@ -11,8 +11,8 @@ import {
 import { T } from "../../lib/theme";
 import LevelRing from "../../components/LevelRing";
 import ByteGreeting from "../../components/ByteGreeting";
-import { getAvatarImage } from "../../lib/avatar";
 import { getMissionStats, type MissionStats } from "../../lib/mission-progress";
+import { APP_NAME } from "../../lib/branding";
 
 const XP_THRESHOLDS = [0, 100, 250, 450, 700, 1000, 1300, 1600, 1900, 2200];
 
@@ -108,7 +108,6 @@ export default function DashboardScreen() {
     ? Math.round(masteryValues.reduce((a, b) => a + b, 0) / masteryValues.length) : 0;
   const weakestEntry = Object.entries(mastery).sort((a, b) => a[1] - b[1])[0];
 
-  const avatarImage = getAvatarImage(user.avatarBase);
   const missionValue = `${missionStats?.completed ?? progress?.stats.completedQuests ?? 0}/${missionStats?.total ?? progress?.stats.totalQuests ?? 0}`;
 
   return (
@@ -126,7 +125,7 @@ export default function DashboardScreen() {
       >
         {/* Top bar */}
         <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
-          <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 10, flex: 1, minWidth: 0 }}>
             <View style={{
               width: 36, height: 36, borderRadius: 11,
               backgroundColor: T.primarySoft, borderWidth: 1.5, borderColor: T.primaryInk,
@@ -134,7 +133,7 @@ export default function DashboardScreen() {
             }}>
               <Text style={{ fontSize: 18 }}>⛨</Text>
             </View>
-            <Text style={{ fontFamily: T.fontHead, fontSize: 17, color: T.hudInk }}>CyberSafety</Text>
+            <Text numberOfLines={1} style={{ fontFamily: T.fontHead, fontSize: 15, color: T.hudInk, flexShrink: 1 }}>{APP_NAME}</Text>
           </View>
           <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
             <KnowledgeBar pct={pct} />
@@ -168,7 +167,14 @@ export default function DashboardScreen() {
                 <ActivityIndicator color={T.teal} />
               </View>
             ) : (
-              <LevelRing level={level} xpPercent={pct} size={100} avatarImage={avatarImage} />
+              <LevelRing
+                level={level}
+                xpPercent={pct}
+                size={100}
+                avatarBase={user.avatarBase}
+                avatarColor={user.avatarColor}
+                avatarGear={user.avatarGear}
+              />
             )}
             <View style={{ flex: 1 }}>
               <Text style={{ fontFamily: T.fontBody, fontSize: 11, color: T.mint, textTransform: "uppercase", letterSpacing: 2 }}>

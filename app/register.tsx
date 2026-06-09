@@ -7,6 +7,7 @@ import { useRouter, Link } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
 import { useAuth } from "../contexts/auth-context";
+import { APP_NAME } from "../lib/branding";
 import { T } from "../lib/theme";
 
 export default function RegisterScreen() {
@@ -80,7 +81,7 @@ export default function RegisterScreen() {
               <Text style={{ fontSize: 26 }}>⛨</Text>
             </View>
             <Text style={{ fontFamily: T.fontHead, fontSize: 26, color: T.hudInk }}>
-              Akademija Sajber Čuvara
+              {APP_NAME}
             </Text>
             <Text style={{ fontFamily: T.fontBody, fontSize: 13, color: T.hudMuted, marginTop: 4, letterSpacing: 1, textTransform: "uppercase" }}>
               Kreiranje profila

@@ -12,6 +12,8 @@ import { useAuth } from "../../contexts/auth-context";
 import type { ScenarioSummary } from "../../lib/api";
 import { T } from "../../lib/theme";
 import { getMergedScenarios } from "../../lib/mission-progress";
+import { isPushEnabled, wasPushPromptAnswered } from "../../lib/notifications";
+import PushPermissionPrompt from "../../components/PushPermissionPrompt";
 
 // Subtle atmospheric backdrop — drawn behind a heavy dark wash so it reads as
 // texture only (the route itself is drawn in <StoryRoute/>, not in the image).
@@ -486,6 +488,7 @@ export default function MissionsScreen() {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [animSeg,    setAnimSeg]    = useState(-1); // segment to draw-in on unlock
   const [celebrateIdx, setCelebrateIdx] = useState(-1); // node that just unlocked
+  const [showPushPrompt, setShowPushPrompt] = useState(false);
 
   const loadScenarios = useCallback(() => {
     if (!user) return;
@@ -543,6 +546,19 @@ export default function MissionsScreen() {
   const totalDone  = scenarios.filter((s) => s.completed).length;
   const totalCount = scenarios.length;
   const selectedRegion = selectedId ? REGION_DEF.find((r) => r.id === selectedId) ?? null : null;
+
+  async function handleRegionPress(region: Region) {
+    setSelectedId(region.id);
+    if (!user || region.id !== "luka_lozinki" || nodeStates[region.id] === "locked") return;
+
+    const [enabled, answered] = await Promise.all([
+      isPushEnabled(user.id).catch(() => false),
+      wasPushPromptAnswered(user.id).catch(() => true),
+    ]);
+    if (!enabled && !answered) {
+      setTimeout(() => setShowPushPrompt(true), 320);
+    }
+  }
 
   return (
     <View style={{ flex: 1, backgroundColor: "#060B18" }}>
@@ -628,7 +644,7 @@ export default function MissionsScreen() {
               cx={NODE_CX[i]}
               cy={NODE_Y[i]}
               celebrate={celebrateIdx === i}
-              onPress={() => setSelectedId(r.id)}
+              onPress={() => void handleRegionPress(r)}
             />
           ))}
         </ScrollView>
@@ -653,6 +669,14 @@ export default function MissionsScreen() {
         }}>
           <Text style={{ fontFamily: T.fontBody, color: T.badInk }}>{error}</Text>
         </View>
+      ) : null}
+
+      {showPushPrompt ? (
+        <PushPermissionPrompt
+          onDone={() => setShowPushPrompt(false)}
+          title="Želiš obavještenja iz Luke Lozinki?"
+          body="Bajt može da ti pošalje podsjetnik za nastavak misije, dnevni izazov ili kratak cyber savjet kada se ne vratiš neko vrijeme."
+        />
       ) : null}
     </View>
   );

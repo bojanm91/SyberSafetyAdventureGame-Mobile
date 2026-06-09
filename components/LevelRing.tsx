@@ -1,5 +1,6 @@
 import { Image, type ImageSourcePropType, View, Text } from "react-native";
 import Svg, { Circle, Defs, LinearGradient, Stop } from "react-native-svg";
+import GuardianAvatar from "./GuardianAvatar";
 
 interface Props {
   level: number;
@@ -8,9 +9,22 @@ interface Props {
   strokeWidth?: number;
   avatarEmoji?: string;
   avatarImage?: ImageSourcePropType;
+  avatarBase?: string | null;
+  avatarColor?: string | null;
+  avatarGear?: string | null;
 }
 
-export default function LevelRing({ level, xpPercent, size = 100, strokeWidth = 7, avatarEmoji = "🛡️", avatarImage }: Props) {
+export default function LevelRing({
+  level,
+  xpPercent,
+  size = 100,
+  strokeWidth = 7,
+  avatarEmoji = "🛡️",
+  avatarImage,
+  avatarBase,
+  avatarColor,
+  avatarGear,
+}: Props) {
   const r = (size - strokeWidth) / 2;
   const circumference = 2 * Math.PI * r;
   const progress = Math.min(1, Math.max(0, xpPercent / 100));
@@ -51,7 +65,11 @@ export default function LevelRing({ level, xpPercent, size = 100, strokeWidth = 
       </Svg>
       {/* Center content */}
       <View style={{ alignItems: "center" }}>
-        {avatarImage ? (
+        {avatarBase ? (
+          <View style={{ marginBottom: -size * 0.06 }}>
+            <GuardianAvatar base={avatarBase} color={avatarColor} gear={avatarGear} size={size * 0.66} />
+          </View>
+        ) : avatarImage ? (
           <Image
             source={avatarImage}
             style={{

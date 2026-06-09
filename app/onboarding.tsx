@@ -15,10 +15,13 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { T } from "../lib/theme";
 import { useAuth } from "../contexts/auth-context";
 import { apiUpdateAvatar } from "../lib/api";
+import VectorBajt from "../components/Bajt";
+import GuardianAvatar from "../components/GuardianAvatar";
+import PushPermissionPrompt from "../components/PushPermissionPrompt";
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
-type Step = "strip" | "dlg_meet" | "avatar" | "choice" | "dlg_call" | "reward";
+type Step = "strip" | "dlg_meet" | "avatar" | "choice" | "dlg_call" | "push" | "reward";
 type AvStep = "appearance" | "specialty";
 type Emo = "happy" | "neutral" | "wink" | "alarm" | "determined";
 
@@ -68,10 +71,10 @@ const DLG_CALL = [
 ];
 
 const AVATAR_BODIES = [
-  { id: "cuvar_a", label: "A", image: require("../assets/images/avatar_a.png") },
-  { id: "cuvar_b", label: "B", image: require("../assets/images/avatar_b.png") },
-  { id: "cuvar_c", label: "C", image: require("../assets/images/avatar_c.png") },
-  { id: "cuvar_d", label: "D", image: require("../assets/images/avatar_d.png") },
+  { id: "cuvar_a", key: "A", label: "Scout" },
+  { id: "cuvar_b", key: "B", label: "Defender" },
+  { id: "cuvar_c", key: "C", label: "Tech" },
+  { id: "cuvar_d", key: "D", label: "Signal" },
 ];
 const AVATAR_COLORS = [
   { id: "plava",       hex: "#3E9BE8" },
@@ -92,179 +95,9 @@ const BAJT_REACT: Record<string, string> = {
 };
 
 const CHOICE_OPTIONS = [
-  { id: "a", text: "Kliknem odmah, ko bi propustio 10.000 KM!", correct: false, bajt: "Auu! Da je bilo stvarno, sad bi neko imao tvoje podatke. Pravilo: predobro da bi bilo istinito + žuri te + traži klik = mamac. Pravi pokloni te ne jure sa tajmerom. Probaj opet, sad znaš." },
-  { id: "b", text: "Ignorišem. Niko mi ne dijeli 10.000 KM bez razloga.", correct: true,  bajt: "Tačno tako! Hitnja i 'predobra ponuda' su klasičan trik. Upravo si odbio svoj prvi mamac. Vidiš da nije teško — samo treba stati i pomisliti sekundu prije klika." },
+  { id: "a", text: "Kliknem odmah, ko bi propustio 10.000 €!", correct: false, bajt: "Auu! Da je bilo stvarno, sad bi neko imao tvoje podatke. Pravilo: predobro da bi bilo istinito + žuri te + traži klik = mamac. Pravi pokloni te ne jure sa tajmerom. Probaj opet, sad znaš." },
+  { id: "b", text: "Ignorišem. Niko mi ne dijeli 10.000 € bez razloga.", correct: true,  bajt: "Tačno tako! Hitnja i 'predobra ponuda' su klasičan trik. Upravo si odbio svoj prvi mamac. Vidiš da nije teško — samo treba stati i pomisliti sekundu prije klika." },
 ];
-
-// ── Bajt component (inspired by image 3 expression sheet) ────────────────────
-
-// Single eye rendered inside the visor
-function BajtEye({ emo, side, s }: { emo: Emo; side: "l" | "r"; s: number }) {
-  const W = s * 0.16;
-  // wink: right eye closed
-  const isWinkClosed = emo === "wink" && side === "r";
-  // determined: narrow slits
-  if (emo === "determined" || isWinkClosed) {
-    return <View style={{ width: W * 1.1, height: W * 0.2, borderRadius: 3, backgroundColor: "#fff" }} />;
-  }
-  // alarm: large + slight red ring
-  if (emo === "alarm") {
-    return (
-      <View style={{ width: W * 1.1, height: W * 1.1, borderRadius: W * 0.6, backgroundColor: "#fff", borderWidth: 2, borderColor: "#F87171" }}>
-        <View style={{ position: "absolute", width: W * 0.45, height: W * 0.45, borderRadius: W * 0.3, backgroundColor: "#0A1520", top: "25%", left: "25%" }} />
-      </View>
-    );
-  }
-  // happy / neutral: arch (dome shape) — flat bottom, curve top
-  if (emo === "happy") {
-    return <View style={{ width: W, height: W * 0.55, borderTopLeftRadius: W, borderTopRightRadius: W, borderBottomLeftRadius: 0, borderBottomRightRadius: 0, backgroundColor: "#fff" }} />;
-  }
-  // neutral / wink open eye: round
-  return <View style={{ width: W * 0.9, height: W * 0.9, borderRadius: W * 0.5, backgroundColor: "#fff" }} />;
-}
-
-// Small blush marks shown for happy emotion
-function Blush({ s }: { s: number }) {
-  const sz = s * 0.1;
-  return (
-    <View style={{ flexDirection: "row", gap: s * 0.32, marginTop: s * 0.04 }}>
-      <View style={{ width: sz, height: sz * 0.55, borderRadius: sz, backgroundColor: "#F5A09A", opacity: 0.6 }} />
-      <View style={{ width: sz, height: sz * 0.55, borderRadius: sz, backgroundColor: "#F5A09A", opacity: 0.6 }} />
-    </View>
-  );
-}
-
-function Bajt({ emo = "happy", size = 110 }: { emo?: Emo; size?: number }) {
-  const floatAnim = useRef(new Animated.Value(0)).current;
-  const shakeAnim = useRef(new Animated.Value(0)).current;
-  const blinkAnim = useRef(new Animated.Value(1)).current;
-
-  // Float
-  useEffect(() => {
-    Animated.loop(Animated.sequence([
-      Animated.timing(floatAnim, { toValue: -7, duration: 2200, easing: Easing.inOut(Easing.sin), useNativeDriver: true }),
-      Animated.timing(floatAnim, { toValue:  0, duration: 2200, easing: Easing.inOut(Easing.sin), useNativeDriver: true }),
-    ])).start();
-  }, [floatAnim]);
-
-  // Periodic blink
-  useEffect(() => {
-    let t: ReturnType<typeof setTimeout>;
-    const blink = () => {
-      Animated.sequence([
-        Animated.timing(blinkAnim, { toValue: 0.05, duration: 70, useNativeDriver: true }),
-        Animated.timing(blinkAnim, { toValue: 1, duration: 70, useNativeDriver: true }),
-      ]).start(() => { t = setTimeout(blink, 2800 + Math.random() * 2000); });
-    };
-    t = setTimeout(blink, 1500);
-    return () => clearTimeout(t);
-  }, [blinkAnim]);
-
-  // Shake on alarm
-  useEffect(() => {
-    if (emo === "alarm") {
-      Animated.loop(Animated.sequence([
-        Animated.timing(shakeAnim, { toValue: -4, duration: 75, useNativeDriver: true }),
-        Animated.timing(shakeAnim, { toValue:  4, duration: 75, useNativeDriver: true }),
-        Animated.timing(shakeAnim, { toValue:  0, duration: 75, useNativeDriver: true }),
-      ])).start();
-    } else {
-      shakeAnim.stopAnimation(); shakeAnim.setValue(0);
-    }
-  }, [emo, shakeAnim]);
-
-  const HEAD   = size * 0.72;    // head diameter
-  const BODY_W = size * 0.56;
-  const BODY_H = size * 0.3;
-  const ANTENNA_R = size * 0.07;
-  const POLE_W = size * 0.025;
-  const POLE_H = size * 0.11;
-
-  // Colours
-  const HEAD_COL  = "#4A8BAA";
-  const BODY_COL  = "#3C7490";
-  const AMBER     = "#F5A623";
-  const VISOR_COL = "#0C1825";
-  const EAR_COL   = "#F5A623";
-
-  const VISOR_W = HEAD * 0.78;
-  const VISOR_H = HEAD * 0.46;
-
-  return (
-    <Animated.View style={{ transform: [{ translateY: floatAnim }, { translateX: shakeAnim }], alignItems: "center" }}>
-
-      {/* Antenna ball */}
-      <View style={{ width: ANTENNA_R * 2, height: ANTENNA_R * 2, borderRadius: ANTENNA_R, backgroundColor: AMBER, shadowColor: AMBER, shadowRadius: 6, shadowOpacity: 0.8, shadowOffset: { width: 0, height: 0 } }} />
-
-      {/* Antenna pole */}
-      <View style={{ width: POLE_W, height: POLE_H, backgroundColor: "#3A6A80", marginBottom: -POLE_W }} />
-
-      {/* HEAD */}
-      <View style={{
-        width: HEAD, height: HEAD * 0.9,
-        borderRadius: HEAD * 0.46,
-        backgroundColor: HEAD_COL,
-        alignItems: "center",
-        shadowColor: "#000", shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.4, shadowRadius: 10, elevation: 10,
-        overflow: "visible",
-      }}>
-        {/* Left ear panel */}
-        <View style={{ position: "absolute", left: -HEAD * 0.06, top: HEAD * 0.28, width: HEAD * 0.1, height: HEAD * 0.22, borderRadius: 6, backgroundColor: EAR_COL, opacity: 0.9 }} />
-        {/* Right ear panel */}
-        <View style={{ position: "absolute", right: -HEAD * 0.06, top: HEAD * 0.28, width: HEAD * 0.1, height: HEAD * 0.22, borderRadius: 6, backgroundColor: EAR_COL, opacity: 0.9 }} />
-
-        {/* Forehead badge (amber triangle/diamond) */}
-        <View style={{ marginTop: HEAD * 0.08, width: HEAD * 0.2, height: HEAD * 0.1, borderRadius: 4, backgroundColor: AMBER, opacity: 0.9 }} />
-
-        {/* VISOR */}
-        <View style={{
-          marginTop: HEAD * 0.04,
-          width: VISOR_W, height: VISOR_H,
-          borderRadius: VISOR_H * 0.32,
-          backgroundColor: VISOR_COL,
-          borderWidth: 1.5, borderColor: "rgba(255,255,255,0.08)",
-          alignItems: "center", justifyContent: "center",
-          overflow: "hidden",
-        }}>
-          {/* Eyes (with blink scaleY) */}
-          <Animated.View style={{ flexDirection: "row", gap: size * 0.08, alignItems: "center", scaleY: emo === "happy" || emo === "wink" ? 1 : blinkAnim }}>
-            <BajtEye emo={emo} side="l" s={size} />
-            <BajtEye emo={emo} side="r" s={size} />
-          </Animated.View>
-
-          {/* Alarm exclamation */}
-          {emo === "alarm" && (
-            <Text style={{ position: "absolute", bottom: 4, color: "#F87171", fontSize: size * 0.1, fontFamily: T.fontBodyXBold }}>!</Text>
-          )}
-        </View>
-
-        {/* Blush marks (happy only) */}
-        {emo === "happy" && <Blush s={size} />}
-      </View>
-
-      {/* BODY */}
-      <View style={{
-        width: BODY_W, height: BODY_H,
-        backgroundColor: BODY_COL,
-        borderRadius: size * 0.12,
-        marginTop: -size * 0.03,
-        alignItems: "center", justifyContent: "center",
-        shadowColor: "#000", shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 6, elevation: 6,
-      }}>
-        {/* Chest screen */}
-        <View style={{ width: BODY_W * 0.55, height: BODY_H * 0.42, backgroundColor: "#0C1825", borderRadius: 6, borderWidth: 1, borderColor: "rgba(255,255,255,0.1)", alignItems: "center", justifyContent: "center" }}>
-          <View style={{ width: 7, height: 7, borderRadius: 4, backgroundColor: emo === "alarm" ? T.coral : T.teal, shadowColor: emo === "alarm" ? T.coral : T.teal, shadowRadius: 4, shadowOpacity: 1 }} />
-        </View>
-      </View>
-
-      {/* Feet */}
-      <View style={{ flexDirection: "row", gap: BODY_W * 0.22, marginTop: 2 }}>
-        <View style={{ width: size * 0.12, height: size * 0.07, borderRadius: size * 0.04, backgroundColor: "#F07850" }} />
-        <View style={{ width: size * 0.12, height: size * 0.07, borderRadius: size * 0.04, backgroundColor: "#F07850" }} />
-      </View>
-    </Animated.View>
-  );
-}
 
 // ── Typewriter ────────────────────────────────────────────────────────────────
 
@@ -390,7 +223,7 @@ function DialogueScreen({ lines, line, onNext, onSkip, avatarName, nextLabel, bg
         {bgImage ? (
           <Image source={bgImage} style={{ position: "absolute", width: "100%", height: "100%", resizeMode: "cover", opacity: 0.25 }} />
         ) : null}
-        <Bajt emo={cur.emo} size={140} />
+        <VectorBajt emo={cur.emo} size={140} />
       </View>
 
       {/* Dialog box */}
@@ -447,7 +280,7 @@ function AvatarScreen({ av, setAv, step, onBack, onFwd, knowledge }: {
       <ScrollView contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 16, gap: 16 }} showsVerticalScrollIndicator={false}>
         {/* Guide bubble */}
         <View style={{ flexDirection: "row", gap: 10, alignItems: "flex-start", marginTop: 8 }}>
-          <Bajt emo={step === "appearance" ? "happy" : step === "specialty" ? "neutral" : "happy"} size={58} />
+          <VectorBajt emo={step === "appearance" ? "happy" : step === "specialty" ? "neutral" : "happy"} size={58} />
           <View style={s.guideBubble}>
             <Text style={s.guideTxt}>
               {step === "appearance" && "Svaki čuvar izgleda drugačije. Kako ćeš ti? Biraj slobodno — uvijek možeš promijeniti."}
@@ -460,7 +293,7 @@ function AvatarScreen({ av, setAv, step, onBack, onFwd, knowledge }: {
         <View style={{ alignItems: "center" }}>
           <View style={{ borderWidth: 2.5, borderColor: av.color.hex, borderRadius: 22, padding: 8, shadowColor: av.color.hex, shadowRadius: 12, shadowOpacity: 0.4 }}>
             <View style={s.avPreviewPh}>
-              <Image source={selectedBody.image} style={{ width: "86%", height: "88%", resizeMode: "contain" }} />
+              <GuardianAvatar base={selectedBody.key} color={av.color.hex} gear={av.specialty} size={128} />
               <View style={{ position: "absolute", right: 6, bottom: 6, width: 14, height: 14, borderRadius: 7, backgroundColor: av.color.hex, borderWidth: 2, borderColor: T.paper }} />
             </View>
           </View>
@@ -477,9 +310,9 @@ function AvatarScreen({ av, setAv, step, onBack, onFwd, knowledge }: {
                   style={[s.avBodyBtn, av.body === b.id && { borderColor: T.teal, shadowColor: T.teal, shadowRadius: 6, shadowOpacity: 0.4 }]}
                 >
                   <View style={[s.avBodyPh, { borderColor: av.body === b.id ? T.teal : "transparent", borderWidth: 2 }]}>
-                    <Image source={b.image} style={{ width: "100%", height: "100%", resizeMode: "contain" }} />
+                    <GuardianAvatar base={b.key} color={av.body === b.id ? av.color.hex : "#7DD3FC"} gear={av.specialty} size={56} />
                   </View>
-                  <Text style={{ fontFamily: T.fontBody, fontSize: 9, color: T.hudMuted, marginTop: 3 }}>{b.id}</Text>
+                  <Text style={{ fontFamily: T.fontBody, fontSize: 9, color: T.hudMuted, marginTop: 3 }}>{b.label}</Text>
                 </TouchableOpacity>
               ))}
             </View>
@@ -520,7 +353,7 @@ function AvatarScreen({ av, setAv, step, onBack, onFwd, knowledge }: {
             </View>
             {av.specialty && (
               <View style={{ flexDirection: "row", gap: 10, alignItems: "center", backgroundColor: T.primarySoft, borderRadius: T.rMd, padding: 12 }}>
-                <Bajt emo="wink" size={40} />
+                <VectorBajt emo="wink" size={40} />
                 <Text style={{ fontFamily: T.fontBody, color: T.hudInk, fontSize: 13.5, flex: 1 }}>{BAJT_REACT[av.specialty]}</Text>
               </View>
             )}
@@ -572,7 +405,7 @@ function ChoiceScreen({ onNext, avatarName }: { onNext: () => void; avatarName: 
     <View style={s.flex}>
       <View style={s.hud}>
         <View style={{ flexDirection: "row", alignItems: "center", gap: 8, flex: 1 }}>
-          <Bajt emo={pick ? (correct ? "happy" : "alarm") : "neutral"} size={46} />
+          <VectorBajt emo={pick ? (correct ? "happy" : "alarm") : "neutral"} size={46} />
           <Text style={{ fontFamily: T.fontBody, color: T.hudInk, fontSize: 13, flex: 1 }}>
             Ovo je simulacija — ništa stvarno, samo vježba. Iskoči ti ovakva poruka na ekranu. Šta radiš?
           </Text>
@@ -589,7 +422,7 @@ function ChoiceScreen({ onNext, avatarName }: { onNext: () => void; avatarName: 
               <View style={s.scam}>
                 <View style={s.scamBadge}><Text style={s.scamBadgeTxt}>🎁 SPECIJALNA PONUDA</Text></View>
                 <Text style={s.scamTitle}>ČESTITAMO!</Text>
-                <Text style={s.scamBody}>Izabran si za nagradu od 10.000 KM! Klikni OVDJE odmah da preuzmеš!!</Text>
+                <Text style={s.scamBody}>Izabran si za nagradu od 10.000 €! Klikni OVDJE odmah da preuzmeš!!</Text>
                 <Text style={s.scamTimer}>⏰ Ponuda ističe za <Text style={{ fontVariant: ["tabular-nums"] }}>02:59</Text></Text>
                 <View style={s.scamCta}><Text style={s.scamCtaTxt}>KLIKNI OVDJE →</Text></View>
               </View>
@@ -697,9 +530,13 @@ function RewardScreen({ avatarName, onClaim }: { avatarName: string; onClaim: ()
 
           {/* Badge */}
           <Animated.View style={[s.badge, { transform: [{ scale: scaleAnim }] }]}>
-            <View style={s.badgeInner}>
-              <Text style={s.badgeGlyph}>REGRUT{"\n"}AKADEMIJE</Text>
-            </View>
+            {IMG_BADGE_RECRUIT ? (
+              <Image source={IMG_BADGE_RECRUIT} style={{ width: 104, height: 104, resizeMode: "contain" }} />
+            ) : (
+              <View style={s.badgeInner}>
+                <Text style={s.badgeGlyph}>REGRUT{"\n"}AKADEMIJE</Text>
+              </View>
+            )}
           </Animated.View>
         </View>
 
@@ -734,7 +571,7 @@ function RewardScreen({ avatarName, onClaim }: { avatarName: string; onClaim: ()
 
         {/* Bajt outro */}
         <View style={{ flexDirection: "row", gap: 10, alignItems: "center", backgroundColor: T.primarySoft, borderRadius: T.rMd, padding: 12, width: "100%", marginBottom: 4 }}>
-          <Bajt emo="determined" size={44} />
+          <VectorBajt emo="determined" size={44} />
           <Text style={{ fontFamily: T.fontBody, color: T.hudInk, fontSize: 13.5, flex: 1 }}>
             Mapa ti je otključala <Text style={{ color: T.mint, fontFamily: T.fontBodyXBold }}>Luku Lozinki</Text> — vidimo se tamo!
           </Text>
@@ -868,13 +705,21 @@ export default function OnboardingScreen() {
       {step === "dlg_call" && (
         <DialogueScreen
           lines={DLG_CALL} line={dlgLine} avatarName={agentName}
-          onSkip={() => setStep("reward")}
+          onSkip={() => setStep("push")}
           nextLabel="Idemo ›"
           bgImage={IMG_MRACKO}
           onNext={() => {
             if (dlgLine < DLG_CALL.length - 1) setDlgLine(dlgLine + 1);
-            else setStep("reward");
+            else setStep("push");
           }}
+        />
+      )}
+
+      {step === "push" && (
+        <PushPermissionPrompt
+          onDone={() => setStep("reward")}
+          title="Da li želiš Bajtova obavještenja?"
+          body="Luka Lozinki je otključana. Bajt može da te podsjeti na dnevni izazov, nastavak misije i korisne cyber savjete."
         />
       )}
 

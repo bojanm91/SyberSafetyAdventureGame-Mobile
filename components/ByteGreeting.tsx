@@ -4,14 +4,12 @@
  */
 import { useEffect, useRef, useState } from "react";
 import {
-  View, Text, TouchableOpacity, Animated, Easing, Image, ActivityIndicator,
+  View, Text, TouchableOpacity, Animated, Easing, ActivityIndicator,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import Bajt from "./Bajt";
 import { apiGetByteFact } from "../lib/api";
 import { T } from "../lib/theme";
-
-let BAJT_IMG: number | null = null;
-try { BAJT_IMG = require("../assets/images/bajt_robot.png"); } catch { BAJT_IMG = null; }
 
 export default function ByteGreeting({ visible, onClose, name }: { visible: boolean; onClose: () => void; name?: string | null }) {
   const insets = useSafeAreaInsets();
@@ -76,11 +74,7 @@ export default function ByteGreeting({ visible, onClose, name }: { visible: bool
       <Animated.View style={{ width: "100%", maxWidth: 420, transform: [{ translateY: slide }] }}>
         {/* Bajt */}
         <Animated.View style={{ alignItems: "center", marginBottom: -22, zIndex: 2, transform: [{ translateY: floatY }] }}>
-          {BAJT_IMG ? (
-            <Image source={BAJT_IMG} style={{ width: 132, height: 132, resizeMode: "contain" }} />
-          ) : (
-            <Text style={{ fontSize: 84 }}>🤖</Text>
-          )}
+          <Bajt emotion={loading ? "neutral" : "happy"} size={136} />
         </Animated.View>
 
         {/* Govorni oblačić */}

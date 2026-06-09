@@ -9,7 +9,6 @@ import { apiGetProgress, apiGetMastery, apiGetXpHistory, type ProgressData } fro
 import { T } from "../../lib/theme";
 import LevelRing from "../../components/LevelRing";
 import RadarChart from "../../components/RadarChart";
-import { getAvatarImage } from "../../lib/avatar";
 import { getMissionStats, type MissionStats } from "../../lib/mission-progress";
 import {
   isPushEnabled,
@@ -101,7 +100,6 @@ export default function ProfileScreen() {
   const level  = p?.profile.level ?? user.level;
   const points = p?.profile.points ?? user.points;
   const pct    = p?.stats.xpPercentage ?? xpPercent(points, level);
-  const avatarImage = getAvatarImage(user.avatarBase);
   const missionValue = `${missionStats?.completed ?? p?.stats.completedQuests ?? 0}/${missionStats?.total ?? p?.stats.totalQuests ?? 0}`;
 
   const radarData   = Object.entries(mastery).sort((a, b) => a[0].localeCompare(b[0])).map(([slug, val]) => ({ label: TOPIC_NAMES[slug] ?? slug, icon: TOPIC_ICONS[slug] ?? "📌", value: val }));
@@ -196,7 +194,14 @@ export default function ProfileScreen() {
         {/* Profile card */}
         <View style={{ ...card, borderColor: "rgba(24,165,130,0.25)" }}>
           <View style={{ flexDirection: "row", alignItems: "center", gap: 16 }}>
-            <LevelRing level={level} xpPercent={pct} size={90} avatarImage={avatarImage} />
+            <LevelRing
+              level={level}
+              xpPercent={pct}
+              size={90}
+              avatarBase={user.avatarBase}
+              avatarColor={user.avatarColor}
+              avatarGear={user.avatarGear}
+            />
             <View style={{ flex: 1 }}>
               <Text style={{ fontFamily: T.fontBody, fontSize: 11, color: T.mint, textTransform: "uppercase", letterSpacing: 2 }}>Cyber Agent</Text>
               <Text style={{ fontFamily: T.fontHead, color: T.hudInk, fontSize: 20, marginTop: 2 }}>{user.codename ?? user.username}</Text>

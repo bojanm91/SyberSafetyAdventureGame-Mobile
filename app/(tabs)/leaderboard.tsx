@@ -1,11 +1,11 @@
 import { useEffect, useState } from "react";
-import { Image, View, Text, ScrollView, ActivityIndicator } from "react-native";
+import { View, Text, ScrollView, ActivityIndicator } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
 import { useAuth } from "../../contexts/auth-context";
 import { apiGetLeaderboard, type LeaderboardEntry } from "../../lib/api";
 import { T } from "../../lib/theme";
-import { getAvatarImage } from "../../lib/avatar";
+import GuardianAvatar from "../../components/GuardianAvatar";
 
 const RANK_COLORS: Record<string, string> = {
   "Mrežni Čuvar": T.primary,
@@ -63,7 +63,6 @@ export default function LeaderboardScreen() {
             {entries.map((entry) => {
               const isMe      = entry.id === user?.id;
               const rankColor = RANK_COLORS[entry.rankTier] ?? T.hudMuted;
-              const avatar    = getAvatarImage(entry.avatarBase);
               const avatarClr = entry.avatarColor ?? T.primary;
 
               return (
@@ -93,7 +92,7 @@ export default function LeaderboardScreen() {
                     borderWidth: 2, borderColor: avatarClr,
                     alignItems: "center", justifyContent: "center",
                   }}>
-                    <Image source={avatar} style={{ width: 24, height: 34, resizeMode: "contain" }} />
+                    <GuardianAvatar base={entry.avatarBase} color={avatarClr} size={38} />
                   </View>
 
                   {/* Info */}

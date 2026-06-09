@@ -22,6 +22,10 @@ function pushEnabledKey(userId: string) {
   return `csag_push_enabled_${userId}`;
 }
 
+function pushPromptAnsweredKey(userId: string) {
+  return `csag_push_prompt_answered_${userId}`;
+}
+
 function getProjectId() {
   return (
     Constants.expoConfig?.extra?.eas?.projectId ??
@@ -45,6 +49,14 @@ export async function getStoredPushToken(userId: string) {
 
 export async function isPushEnabled(userId: string) {
   return (await AsyncStorage.getItem(pushEnabledKey(userId))) === "true";
+}
+
+export async function wasPushPromptAnswered(userId: string) {
+  return (await AsyncStorage.getItem(pushPromptAnsweredKey(userId))) === "true";
+}
+
+export async function markPushPromptAnswered(userId: string) {
+  await AsyncStorage.setItem(pushPromptAnsweredKey(userId), "true");
 }
 
 export async function registerForPushNotifications(userId: string) {
