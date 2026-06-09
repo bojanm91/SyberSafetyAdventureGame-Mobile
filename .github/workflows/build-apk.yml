@@ -5,6 +5,9 @@ on:
     tags:
       - 'v*'
 
+permissions:
+  contents: write
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -16,7 +19,7 @@ jobs:
           node-version: 20
 
       - name: Install dependencies
-        run: npm install --legacy-peer-deps
+        run: npm ci --legacy-peer-deps
 
       - uses: expo/expo-github-action@v8
         with:
@@ -24,13 +27,14 @@ jobs:
           token: ${{ secrets.EXPO_TOKEN }}
 
       - name: Build APK
-        run: eas build --platform android --profile preview --non-interactive
+        run: eas build --platform android --profile preview --non-interactive --wait
 
       - name: Get APK URL
         id: apk
         run: |
           URL=$(eas build:list --platform android --limit 1 --json --non-interactive | \
             node -e "const d=require('fs').readFileSync('/dev/stdin','utf8'); console.log(JSON.parse(d)[0].artifacts?.buildUrl ?? '')")
+          test -n "$URL"
           echo "url=$URL" >> $GITHUB_OUTPUT
 
       - name: Download APK
@@ -48,5 +52,6 @@ jobs:
             3. Ako te pita, dozvoli **"Instaliraj iz nepoznatih izvora"**
             4. Instaliraj i uživaj!
           files: csag-mobile.apk
+          overwrite_files: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
