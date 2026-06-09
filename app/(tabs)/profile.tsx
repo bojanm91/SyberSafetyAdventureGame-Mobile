@@ -10,6 +10,7 @@ import { T } from "../../lib/theme";
 import LevelRing from "../../components/LevelRing";
 import RadarChart from "../../components/RadarChart";
 import { getMissionStats, type MissionStats } from "../../lib/mission-progress";
+import { formatCompact } from "../../lib/format";
 import {
   isPushEnabled,
   registerForPushNotifications,
@@ -218,7 +219,7 @@ export default function ProfileScreen() {
               </View>
             </View>
             <View style={{ alignItems: "flex-end" }}>
-              <Text style={{ fontFamily: T.fontBodyXBold, color: T.sun, fontSize: 22 }}>{points.toLocaleString()}</Text>
+              <Text style={{ fontFamily: T.fontBodyXBold, color: T.sun, fontSize: 22 }}>{formatCompact(points)}</Text>
               <Text style={{ fontFamily: T.fontBody, color: T.hudMuted, fontSize: 11 }}>bodova</Text>
             </View>
           </View>
@@ -243,7 +244,7 @@ export default function ProfileScreen() {
         {p && (
           <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 10, marginBottom: 14 }}>
             {[
-              { label: "Bodovi",           value: p.profile.points.toLocaleString(), color: T.sun },
+              { label: "Bodovi",           value: formatCompact(p.profile.points), color: T.sun },
               { label: "Bedževi",          value: String(p.stats.badgesCount),       color: T.coral },
               { label: "Završene misije",  value: missionValue, color: T.mint },
               { label: "Streak",           value: `${p.profile.streak}d`,            color: T.primary },

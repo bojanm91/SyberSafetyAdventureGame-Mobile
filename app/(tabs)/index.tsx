@@ -3,6 +3,7 @@ import { View, Text, ScrollView, TouchableOpacity, ActivityIndicator } from "rea
 import { useFocusEffect, useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
+import Svg, { Circle } from "react-native-svg";
 import { useAuth } from "../../contexts/auth-context";
 import {
   apiGetProgress, apiGetDailyChallenge, apiGetMastery,
@@ -13,6 +14,7 @@ import LevelRing from "../../components/LevelRing";
 import ByteGreeting from "../../components/ByteGreeting";
 import { getMissionStats, type MissionStats } from "../../lib/mission-progress";
 import { APP_NAME } from "../../lib/branding";
+import { formatCompact } from "../../lib/format";
 
 const XP_THRESHOLDS = [0, 100, 250, 450, 700, 1000, 1300, 1600, 1900, 2200];
 
@@ -23,6 +25,28 @@ function xpPercent(points: number, level: number): number {
 }
 function xpToNext(points: number, level: number): number {
   return Math.max(0, (XP_THRESHOLDS[level] ?? (XP_THRESHOLDS[level - 1] ?? 0) + 300) - points);
+}
+
+/** Mini kružni indikator napretka s brojem levela u centru (za gornju kapsulu). */
+function MiniRing({ pct, level, size = 26 }: { pct: number; level: number; size?: number }) {
+  const sw = 3;
+  const r = (size - sw) / 2;
+  const c = 2 * Math.PI * r;
+  const off = c * (1 - Math.min(1, Math.max(0, pct / 100)));
+  return (
+    <View style={{ width: size, height: size, alignItems: "center", justifyContent: "center" }}>
+      <Svg width={size} height={size} style={{ position: "absolute" }}>
+        <Circle cx={size / 2} cy={size / 2} r={r} stroke="rgba(255,255,255,0.16)" strokeWidth={sw} fill="none" />
+        <Circle
+          cx={size / 2} cy={size / 2} r={r}
+          stroke={T.sun} strokeWidth={sw} fill="none"
+          strokeDasharray={c} strokeDashoffset={off} strokeLinecap="round"
+          rotation="-90" origin={`${size / 2}, ${size / 2}`}
+        />
+      </Svg>
+      <Text style={{ fontFamily: T.fontBodyXBold, color: T.sun, fontSize: size * 0.42 }}>{level}</Text>
+    </View>
+  );
 }
 
 const TYPE_ICONS: Record<string, string> = {
@@ -36,30 +60,8 @@ const TOPIC_ICONS: Record<string, string> = {
   prevare: "⚠️", azuriranja: "🔄", "sigurno-preuzimanje": "📥",
 };
 
-function KnowledgeBar({ pct }: { pct: number }) {
-  return (
-    <View style={{
-      flexDirection: "row", alignItems: "center", gap: 8,
-      backgroundColor: T.hudBg, borderWidth: 1, borderColor: T.hudStroke,
-      borderRadius: T.rPill, paddingHorizontal: 14, paddingVertical: 6,
-    }}>
-      <View style={{
-        width: 24, height: 24, borderRadius: 7,
-        backgroundColor: T.sun, alignItems: "center", justifyContent: "center",
-      }}>
-        <Text style={{ fontFamily: T.fontBodyXBold, fontSize: 13, color: T.bg }}>Z</Text>
-      </View>
-      <Text style={{ fontFamily: T.fontBody, fontSize: 11, color: T.hudMuted, letterSpacing: 1, textTransform: "uppercase" }}>Znanje</Text>
-      <View style={{ flex: 1, height: 7, backgroundColor: "rgba(255,255,255,0.12)", borderRadius: 999, overflow: "hidden" }}>
-        <View style={{ height: "100%", width: `${pct}%`, backgroundColor: T.teal, borderRadius: 999 }} />
-      </View>
-      <Text style={{ fontFamily: T.fontBodyXBold, fontSize: 12, color: T.hudInk }}>{pct}%</Text>
-    </View>
-  );
-}
-
 export default function DashboardScreen() {
-  const { user, logout, justLoggedIn, ackLogin } = useAuth();
+  const { user, justLoggedIn, ackLogin } = useAuth();
   const router = useRouter();
   const insets = useSafeAreaInsets();
 
@@ -124,28 +126,52 @@ export default function DashboardScreen() {
         showsVerticalScrollIndicator={false}
       >
         {/* Top bar */}
-        <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
+        <View style={{
+          flexDirection: "row",
+          alignItems: "center",
+          justifyContent: "space-between",
+          gap: 12,
+          marginBottom: 16,
+        }}>
           <View style={{ flexDirection: "row", alignItems: "center", gap: 10, flex: 1, minWidth: 0 }}>
             <View style={{
-              width: 36, height: 36, borderRadius: 11,
-              backgroundColor: T.primarySoft, borderWidth: 1.5, borderColor: T.primaryInk,
-              alignItems: "center", justifyContent: "center",
+              width: 38,
+              height: 38,
+              borderRadius: 12,
+              backgroundColor: "rgba(34,211,238,0.12)",
+              borderWidth: 1,
+              borderColor: "rgba(34,211,238,0.28)",
+              alignItems: "center",
+              justifyContent: "center",
             }}>
-              <Text style={{ fontSize: 18 }}>⛨</Text>
+              <Text style={{ fontFamily: T.fontHead, fontSize: 14, color: T.teal }}>CS</Text>
             </View>
-            <Text numberOfLines={1} style={{ fontFamily: T.fontHead, fontSize: 15, color: T.hudInk, flexShrink: 1 }}>{APP_NAME}</Text>
+            <View style={{ flex: 1, minWidth: 0 }}>
+              <Text numberOfLines={1} style={{ fontFamily: T.fontHead, fontSize: 17, color: T.hudInk }}>
+                {APP_NAME}
+              </Text>
+              <Text numberOfLines={1} style={{ fontFamily: T.fontBody, fontSize: 11, color: T.hudMuted, marginTop: 1 }}>
+                Baza agenta
+              </Text>
+            </View>
           </View>
-          <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
-            <KnowledgeBar pct={pct} />
-            <TouchableOpacity
-              onPress={logout}
-              style={{
-                borderWidth: 1, borderColor: T.border,
-                borderRadius: T.rSm, paddingHorizontal: 12, paddingVertical: 6,
-              }}
-            >
-              <Text style={{ fontFamily: T.fontBody, color: T.hudMuted, fontSize: 12 }}>Odjavi se</Text>
-            </TouchableOpacity>
+
+          <View style={{
+            flexDirection: "row",
+            alignItems: "center",
+            gap: 8,
+            borderWidth: 1,
+            borderColor: "rgba(250,199,117,0.28)",
+            backgroundColor: "rgba(250,199,117,0.11)",
+            borderRadius: T.rPill,
+            paddingLeft: 7,
+            paddingRight: 13,
+            paddingVertical: 6,
+          }}>
+            <MiniRing pct={pct} level={level} />
+            <Text style={{ fontFamily: T.fontBodyXBold, color: T.sun, fontSize: 13 }}>
+              {formatCompact(points)} XP
+            </Text>
           </View>
         </View>
 
@@ -193,13 +219,35 @@ export default function DashboardScreen() {
                   </View>
                 )}
               </View>
-              <View style={{ marginTop: 10, gap: 4 }}>
-                <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
-                  <Text style={{ fontFamily: T.fontBody, color: T.hudMuted, fontSize: 11 }}>XP do narednog nivoa</Text>
-                  <Text style={{ fontFamily: T.fontBodyXBold, color: T.hudInk, fontSize: 11 }}>{toNext} XP</Text>
+              <View style={{ marginTop: 12 }}>
+                {/* Level chipovi + procenat */}
+                <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 7 }}>
+                  <View style={{ backgroundColor: "rgba(34,211,238,0.14)", borderColor: "rgba(34,211,238,0.3)", borderWidth: 1, borderRadius: 999, paddingHorizontal: 8, paddingVertical: 2 }}>
+                    <Text style={{ fontFamily: T.fontBodyXBold, color: T.teal, fontSize: 10 }}>L{level}</Text>
+                  </View>
+                  <Text style={{ fontFamily: T.fontBodyXBold, color: T.teal, fontSize: 11 }}>{pct}%</Text>
+                  <View style={{ backgroundColor: "rgba(139,92,246,0.14)", borderColor: "rgba(139,92,246,0.3)", borderWidth: 1, borderRadius: 999, paddingHorizontal: 8, paddingVertical: 2 }}>
+                    <Text style={{ fontFamily: T.fontBodyXBold, color: "#A78BFA", fontSize: 10 }}>L{level + 1}</Text>
+                  </View>
                 </View>
-                <View style={{ height: 7, backgroundColor: "rgba(255,255,255,0.1)", borderRadius: 999, overflow: "hidden" }}>
-                  <View style={{ height: "100%", width: `${pct}%`, backgroundColor: T.teal, borderRadius: 999 }} />
+                {/* Track + gradijent + marker */}
+                <View style={{ height: 9, backgroundColor: "rgba(255,255,255,0.09)", borderRadius: 999, justifyContent: "center" }}>
+                  <LinearGradient
+                    colors={[T.mint, T.teal, "#8B5CF6"]}
+                    start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}
+                    style={{ position: "absolute", left: 0, top: 0, bottom: 0, width: `${Math.max(pct, 3)}%`, borderRadius: 999 }}
+                  />
+                  <View style={{
+                    position: "absolute", left: `${pct}%`, marginLeft: -7,
+                    width: 14, height: 14, borderRadius: 7,
+                    backgroundColor: "#fff", borderWidth: 2.5, borderColor: T.teal,
+                    shadowColor: T.teal, shadowOpacity: 0.6, shadowRadius: 4, shadowOffset: { width: 0, height: 0 }, elevation: 4,
+                  }} />
+                </View>
+                {/* XP brojevi */}
+                <View style={{ flexDirection: "row", justifyContent: "space-between", marginTop: 7 }}>
+                  <Text style={{ fontFamily: T.fontBodyXBold, color: T.hudInk, fontSize: 11 }}>{formatCompact(points)} XP</Text>
+                  <Text style={{ fontFamily: T.fontBody, color: T.hudMuted, fontSize: 11 }}>+{formatCompact(toNext)} do L{level + 1}</Text>
                 </View>
               </View>
             </View>
@@ -209,7 +257,7 @@ export default function DashboardScreen() {
         {/* Stats row */}
         <View style={{ flexDirection: "row", gap: 10, marginBottom: 14 }}>
           {[
-            { label: "Bodovi", value: points.toLocaleString(), color: T.sun },
+            { label: "Bodovi", value: formatCompact(points), color: T.sun },
             { label: "Misije", value: missionValue, color: T.mint },
             { label: "Bedževi", value: String(progress?.stats.badgesCount ?? 0), color: T.coral },
           ].map((s) => (

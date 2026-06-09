@@ -6,6 +6,7 @@ import { useAuth } from "../../contexts/auth-context";
 import { apiGetLeaderboard, type LeaderboardEntry } from "../../lib/api";
 import { T } from "../../lib/theme";
 import GuardianAvatar from "../../components/GuardianAvatar";
+import { formatCompact } from "../../lib/format";
 
 const RANK_COLORS: Record<string, string> = {
   "Mrežni Čuvar": T.primary,
@@ -110,7 +111,7 @@ export default function LeaderboardScreen() {
                   {/* XP */}
                   <View style={{ alignItems: "flex-end" }}>
                     <Text style={{ fontFamily: T.fontBodyXBold, color: T.sun, fontSize: 15 }}>
-                      {entry.points.toLocaleString()}
+                      {formatCompact(entry.points)}
                     </Text>
                     <Text style={{ fontFamily: T.fontBody, color: T.hudMuted, fontSize: 11 }}>XP</Text>
                   </View>
